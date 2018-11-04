@@ -40,7 +40,8 @@ class RfidReader:
                 else:
                     print('ERR Unknown mode', self.mode)
 
-                await asyncio.sleep(1)
+                #await asyncio.sleep(1)
+                await self.loop.run_in_executor(None, self.reader.wait_for_tag_removed)
 
         except asyncio.CancelledError:
             print('>>>> CancelledError')
