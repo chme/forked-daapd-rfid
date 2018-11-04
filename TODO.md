@@ -11,3 +11,15 @@ musicbox:
 - comitup web interface
 - buttons for stop/pause/play/skip
 - rotary encoder for volume
+
+
+--> Wait for tags
+-----> Tag found
+----------> Play
+-----> wait for tag removed
+--> Wait for tag
+
+
+
+--> RFID wait for tags
+-----> Cancel

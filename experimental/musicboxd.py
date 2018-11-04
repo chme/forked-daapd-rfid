@@ -12,35 +12,45 @@ class RfidReader:
 
     MODE_READ    = 1
     MODE_WRITE   = 2
-    MODE_SUSPEND = 3
+
+    run = True
 
     tags = []
 
     def __init__(self, loop):
         self.loop = loop
-        self.mode = self.MODE_SUSPEND
+        self.mode = self.MODE_READ
         self.reader = SimpleMFRC522.SimpleMFRC522()
 
     def cancel(self):
+        self.run = False
         self.reader.cancel()
 
-    async def wait(self):
+    async def handle_tags(self):
         try:
-            await self.loop.run_in_executor(None, self.reader.wait_for_tag)
-            print('Tag found')
-            await self.handle_tag()
-            await asyncio.sleep(1)
-            asyncio.ensure_future(self.wait(), loop=self.loop)
+            while self.run:
+                await self.loop.run_in_executor(None, self.reader.wait_for_tag_available)
+                uid, content = self.reader.read()
+                print('Tag found', uid, content)
+
+                if self.mode == self.MODE_READ:
+                    self.play(uid, content)
+                elif self.mode == self.MODE_WRITE:
+                    self.write_tag(uid, content)
+                else:
+                    print('ERR Unknown mode', self.mode)
+
+                await asyncio.sleep(1)
+
         except asyncio.CancelledError:
             print('>>>> CancelledError')
 
-    async def handle_tag(self):
-        id, content = self.reader.read()
+    def play(self, uid, content):
         self.tags.append({ 'id' : id, 'content' : content })
+        print('PLAY', id, content)
 
-    def read_tag(self):
-        id, content = self.reader.read()
-        self.tags.append({ 'id' : id, 'content' : content })
+    def write_tag(self, uid, content):
+        print('WRITE TAG', uid, content)
 
 
 class WebApi:
@@ -110,7 +120,7 @@ def main():
         loop.run_until_complete(site.start())
 
         rfid_reader = RfidReader(loop)
-        asyncio.ensure_future(rfid_reader.wait(), loop=loop)
+        asyncio.ensure_future(rfid_reader.handle_tags(), loop=loop)
 
         try:
             print("======== Running on {} ========\n"

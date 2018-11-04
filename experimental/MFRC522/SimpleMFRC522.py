@@ -12,7 +12,7 @@ class SimpleMFRC522:
     def cancel(self):
         self.irq.set()
 
-    def wait_for_tag(self):
+    def wait_for_tag_available(self):
         ##pass
         self.irq.clear()
         waiting = True
