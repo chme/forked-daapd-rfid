@@ -1,10 +1,58 @@
+import sys
 import asyncio
 import configparser
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 from aiohttp import web, WSMsgType
-from SimpleMFRC522 import SimpleMFRC522
+from MFRC522 import SimpleMFRC522
 
 conf = None
+
+
+class RfidReader:
+
+    MODE_READ    = 1
+    MODE_WRITE   = 2
+
+    run = True
+
+    tags = []
+
+    def __init__(self, loop):
+        self.loop = loop
+        self.mode = self.MODE_READ
+        self.reader = SimpleMFRC522.SimpleMFRC522()
+
+    def cancel(self):
+        self.run = False
+        self.reader.cancel_wait()
+
+    async def handle_tags(self):
+        try:
+            while self.run:
+                await self.loop.run_in_executor(None, self.reader.wait_for_tag_available)
+                uid, content = self.reader.read()
+                print('Tag found', uid, content)
+
+                if self.mode == self.MODE_READ:
+                    self.play(uid, content)
+                elif self.mode == self.MODE_WRITE:
+                    self.write_tag(uid, content)
+                else:
+                    print('ERR Unknown mode', self.mode)
+
+                #await asyncio.sleep(1)
+                await self.loop.run_in_executor(None, self.reader.wait_for_tag_removed)
+
+        except asyncio.CancelledError:
+            print('>>>> CancelledError')
+
+    def play(self, uid, content):
+        self.tags.append({ 'id' : id, 'content' : content })
+        print('PLAY', id, content)
+
+    def write_tag(self, uid, content):
+        print('WRITE TAG', uid, content)
+
 
 class WebApi:
 
@@ -22,14 +70,8 @@ class WebApi:
                         path='../htdocs/static',
                         name='static')
 
-    async def start(self):
-        self.runner = web.AppRunner(self.app)
-        await self.runner.setup()
-        site = web.TCPSite(self.runner, '127.0.0.1', 9090)
-        await site.start()
-
-    async def stop(self):
-        await self.runner.cleanup()
+    def get_app(self):
+        return self.app
 
     async def index(self, request):
         return web.FileResponse('../htdocs/index.html')
@@ -62,34 +104,6 @@ class WebApi:
         return ws
 
 
-class RfidReader:
-
-    MODE_READ    = 1
-    MODE_WRITE   = 2
-    MODE_SUSPEND = 3
-
-    tags = []
-
-    def __init__(self, loop):
-        self.loop = loop
-        self.mode = self.MODE_SUSPEND
-        self.reader = SimpleMFRC522()
-
-    async def wait(self):
-        await self.loop.run_in_executor(None, self.reader.wait)
-        await self.handle_tag()
-        await asyncio.sleep(1)
-        asyncio.ensure_future(self.wait(), loop=self.loop)
-
-    async def handle_tag(self):
-        id, content = self.reader.read_no_block()
-        tags.append({ 'id' : id, 'content' : content })
-
-    def read_tag(self):
-        id, content = self.reader.read_no_block()
-        tags.append({ 'id' : id, 'content' : content })
-
-
 def main():
     global conf
     conf = configparser.ConfigParser(defaults={})
@@ -98,24 +112,39 @@ def main():
     loop = asyncio.get_event_loop()
 
     web_api = WebApi(loop)
-    asyncio.ensure_future(web_api.start(), loop=loop)
 
-    rfid_reader = RfidReader(loop)
-    asyncio.ensure_future(rfid_reader.wait(), loop=loop)
+    runner = web.AppRunner(web_api.get_app())
+    loop.run_until_complete(runner.setup())
 
     try:
-        loop.run_forever()
-    except KeyboardInterrupt:
-        print('KeyboardInterrupt')
+        site = web.TCPSite(runner, '127.0.0.1', 9090)
+        loop.run_until_complete(site.start())
+
+        rfid_reader = RfidReader(loop)
+        asyncio.ensure_future(rfid_reader.handle_tags(), loop=loop)
+
+        try:
+            print("======== Running on {} ========\n"
+                  "(Press CTRL+C to quit)".format(site.name))
+            loop.run_forever()
+        except (KeyboardInterrupt):
+            pass
+    finally:
+        loop.run_until_complete(runner.cleanup())
         tasks = asyncio.gather(
                     *asyncio.Task.all_tasks(loop=loop),
                     loop=loop,
                     return_exceptions=True)
         tasks.add_done_callback(lambda t: loop.stop())
         tasks.cancel()
+        rfid_reader.cancel()
+    if sys.version_info >= (3, 6):
+        if hasattr(loop, 'shutdown_asyncgens'):
+            loop.run_until_complete(loop.shutdown_asyncgens())
 
 if __name__ == '__main__':
     try:
         main()
     finally:
         GPIO.cleanup()
+        pass
