@@ -2,6 +2,7 @@ import sys
 import asyncio
 import configparser
 import RPi.GPIO as GPIO
+import aiohttp
 from aiohttp import web, WSMsgType
 from MFRC522 import SimpleMFRC522
 
@@ -18,44 +19,68 @@ class RfidReader:
     tags = []
 
     def __init__(self, loop):
+        global conf
         self.loop = loop
         self.mode = self.MODE_READ
         self.reader = SimpleMFRC522.SimpleMFRC522()
+        self.forked_daapd_url = conf.get('musicbox', 'server')
+        self.next_tag = None
 
     def cancel(self):
         self.run = False
         self.reader.cancel_wait()
 
+    def write_next_tag(self, content):
+        print('Write next tag: ', content)
+        self.next_tag = content
+        self.mode = self.MODE_WRITE
+
     async def handle_tags(self):
-        try:
-            while self.run:
-                await self.loop.run_in_executor(None, self.reader.wait_for_tag_available)
-                uid, content = self.reader.read()
-                print('Tag found', uid, content)
+        async with aiohttp.ClientSession() as client:
+            try:
+                while self.run:
+                    await self.loop.run_in_executor(None, self.reader.wait_for_tag_available)
+                    uid, content = self.reader.read()
+                    print('Tag found', uid, content)
 
-                if uid == None:
-                    print('Failed to read tag id')
-                    continue
+                    if uid == None:
+                        print('Failed to read tag id')
+                        continue
 
-                if self.mode == self.MODE_READ:
-                    self.play(uid, content)
-                elif self.mode == self.MODE_WRITE:
-                    self.write_tag(uid, content)
-                else:
-                    print('ERR Unknown mode', self.mode)
+                    if self.mode == self.MODE_READ:
+                        await self.play(uid, content, client)
+                    elif self.mode == self.MODE_WRITE:
+                        self.write_tag(uid, content)
+                    else:
+                        print('ERR Unknown mode', self.mode)
 
-                #await asyncio.sleep(1)
-                await self.loop.run_in_executor(None, self.reader.wait_for_tag_removed)
+                    await self.loop.run_in_executor(None, self.reader.wait_for_tag_removed)
 
-        except asyncio.CancelledError:
-            print('>>>> CancelledError')
+            except asyncio.CancelledError:
+                print('>>>> CancelledError')
 
-    def play(self, uid, content):
-        self.tags.append({ 'id' : id, 'content' : content })
+    async def play(self, uid, content, client):
         print('PLAY', id, content)
+
+        self.tags.append({ 'id' : id, 'content' : content })
+
+        async with client.put(self.forked_daapd_url + '/api/queue/clear') as resp:
+            assert resp.status == 200
+            async with client.put(self.forked_daapd_url + '/api/player/shuffle?state=false') as resp:
+                assert resp.status == 200
+                async with client.put(self.forked_daapd_url + '/api/queue/items/add?uris=' + content) as resp:
+                    assert resp.status == 200
+                    async with client.put(self.forked_daapd_url + '/api/player/play') as resp:
+                        assert resp.status == 200
 
     def write_tag(self, uid, content):
         print('WRITE TAG', uid, content)
+
+        if (self.next_tag):
+            self.reader.write_text(uid, self.next_tag)
+
+        self.mode = self.MODE_READ
+        self.next_tag = None
 
 
 class WebApi:
@@ -77,6 +102,9 @@ class WebApi:
     def get_app(self):
         return self.app
 
+    def set_rfid(self, rfid):
+        self.rfid_reader = rfid
+
     async def index(self, request):
         return web.FileResponse('../htdocs/index.html')
 
@@ -89,6 +117,9 @@ class WebApi:
         return web.json_response({ 'tags' : [ { 'id' : 123, 'content' : 'library:album:123' },  { 'id' : 456, 'content' : 'library:album:456' }]})
 
     async def api_tags_create(self, request):
+        tag = await request.json()
+        print('Create tag: ', tag)
+        self.rfid_reader.write_next_tag(tag['content'])
         return web.json_response({ 'content' : 'xx' })
 
     async def websocket(self, request):
@@ -126,6 +157,8 @@ def main():
 
         rfid_reader = RfidReader(loop)
         asyncio.ensure_future(rfid_reader.handle_tags(), loop=loop)
+
+        web_api.set_rfid(rfid_reader)
 
         try:
             print("======== Running on {} ========\n"
