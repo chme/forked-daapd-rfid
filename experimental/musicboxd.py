@@ -24,7 +24,7 @@ class RfidReader:
 
     def cancel(self):
         self.run = False
-        self.reader.cancel()
+        self.reader.cancel_wait()
 
     async def handle_tags(self):
         try:

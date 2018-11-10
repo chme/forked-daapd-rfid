@@ -9,7 +9,7 @@ class SimpleMFRC522:
     def __init__(self):
         pass
 
-    def cancel(self):
+    def cancel_wait(self):
         self.irq.set()
 
     def wait_for_tag_available(self):
@@ -20,17 +20,20 @@ class SimpleMFRC522:
             waiting = not self.irq.wait(5)
         self.irq.clear()
 
+    def wait_for_tag_removed(self):
+        pass
+
     def read(self):
-        return 123, 'text'
+        return 123456, 'text'
 
     def read_id(self):
-        return 123, 123456
+        return 123456
 
     def read_content(self, uid):
         return 'text_read'
 
     def write(self, uid, text):
-        return 123, 'text'
+        return 'text'
 
     def uid_to_num(self, uid):
         n = 0
