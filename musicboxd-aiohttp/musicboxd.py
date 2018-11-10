@@ -1,7 +1,7 @@
 import sys
 import asyncio
 import configparser
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 from aiohttp import web, WSMsgType
 from MFRC522 import SimpleMFRC522
 
@@ -32,6 +32,10 @@ class RfidReader:
                 await self.loop.run_in_executor(None, self.reader.wait_for_tag_available)
                 uid, content = self.reader.read()
                 print('Tag found', uid, content)
+
+                if uid == None:
+                    print('Failed to read tag id')
+                    continue
 
                 if self.mode == self.MODE_READ:
                     self.play(uid, content)
