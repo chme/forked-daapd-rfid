@@ -1,0 +1,15 @@
+[Unit]
+Description=musicbox (forked-daapd-rfid)
+After=network.target forked-daapd.service
+
+[Service]
+Type=idle
+ExecStart=/forked-daapd/git/forked-daapd-rfid/venv/bin/python3 /forked-daapd/git/forked-daapd-rfid/musicboxd-aiohttp/musicboxd.py
+
+Restart=on-failure
+RestartSec=60
+StartLimitBurst=2
+StartLimitInterval=600
+
+[Install]
+WantedBy=multi-user.target
