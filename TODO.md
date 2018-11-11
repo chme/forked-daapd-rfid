@@ -2,8 +2,11 @@
 
 musicbox:
 
-- read tag and trigger playback
-- write tag
+- close websockets on exit
+- proper config file loading
+- localhost for forked-daapd
+- rfid: keep track of current tag
+- web: show current tag
 - logging
 - store known tags in database
 - add comments from original source in MFRC522
@@ -11,15 +14,3 @@ musicbox:
 - comitup web interface
 - buttons for stop/pause/play/skip
 - rotary encoder for volume
-
-
---> Wait for tags
------> Tag found
-----------> Play
------> wait for tag removed
---> Wait for tag
-
-
-
---> RFID wait for tags
------> Cancel
