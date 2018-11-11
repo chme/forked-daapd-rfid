@@ -60,24 +60,25 @@ class RfidReader:
                 print('>>>> CancelledError')
 
     async def play(self, uid, content, client):
-        print('PLAY', id, content)
+        print('PLAY', uid, content)
 
-        self.tags.append({ 'id' : id, 'content' : content })
+        self.tags.append({ 'id' : uid, 'content' : content })
 
         async with client.put(self.forked_daapd_url + '/api/queue/clear') as resp:
-            assert resp.status == 200
+            print('Clear', resp.status)
             async with client.put(self.forked_daapd_url + '/api/player/shuffle?state=false') as resp:
-                assert resp.status == 200
-                async with client.put(self.forked_daapd_url + '/api/queue/items/add?uris=' + content) as resp:
-                    assert resp.status == 200
+                print('Shuffle', resp.status)
+                async with client.post(self.forked_daapd_url + '/api/queue/items/add?uris=' + content) as resp:
+                    print('Add items', resp.status)
                     async with client.put(self.forked_daapd_url + '/api/player/play') as resp:
-                        assert resp.status == 200
+                        print('Play', resp.status)
 
     def write_tag(self, uid, content):
-        print('WRITE TAG', uid, content)
+        print('WRITE TAG', uid, content, self.next_tag)
 
         if (self.next_tag):
-            self.reader.write_text(uid, self.next_tag)
+            self.reader.wait_for_tag_available()
+            self.reader.write(self.next_tag)
 
         self.mode = self.MODE_READ
         self.next_tag = None
@@ -152,7 +153,7 @@ def main():
     loop.run_until_complete(runner.setup())
 
     try:
-        site = web.TCPSite(runner, '127.0.0.1', 9090)
+        site = web.TCPSite(runner, '0.0.0.0', 9090)
         loop.run_until_complete(site.start())
 
         rfid_reader = RfidReader(loop)
