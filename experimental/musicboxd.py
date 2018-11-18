@@ -2,6 +2,9 @@ import sys
 import asyncio
 import argparse
 import configparser
+import logging
+from logging import StreamHandler
+from logging.handlers import TimedRotatingFileHandler
 import RPi.GPIO as GPIO
 import aiohttp
 from aiohttp import web, WSMsgType
@@ -9,6 +12,7 @@ from MFRC522 import SimpleMFRC522
 
 
 DEFAULT_CONF_PATH = '../musicboxd.conf'
+DEFAULT_LOG_PATH = '../musicboxd.log'
 
 conf = None
 
@@ -153,15 +157,40 @@ class WebApi:
         for ws in self.websockets:
             await ws.send_str(message)
 
+def deflog(path):
+    log = logging.getLogger('musicboxd')
+    log.setLevel(logging.INFO)
+    filehandler = TimedRotatingFileHandler(
+                path,
+                encoding='utf=8',
+                when='D',
+                interval=7,
+                backupCount=8,
+              )
+    fmtr = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    filehandler.setFormatter(fmtr)
+    log.addHandler(filehandler)
+
+    syserrhandler = StreamHandler()
+    syserrhandler.setFormatter(fmtr)
+    log.addHandler(syserrhandler)
+
+    return log
+
 def parse_args():
     parser = argparse.ArgumentParser(description="")
     parser.add_argument('-c', '--conf', default=DEFAULT_CONF_PATH, help="Path to the config file")
+    parser.add_argument('-l', '--log', default=DEFAULT_LOG_PATH, help="Path to the log file")
     return parser.parse_args()
 
 def main():
     global conf
 
     args = parse_args()
+
+    log = deflog(args.log)
+    log.info("Starting musicboxd with arguments '%s'", vars(args))
+
 
     conf = configparser.ConfigParser(defaults={})
     conf.read(args.conf)
