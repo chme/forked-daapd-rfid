@@ -1,10 +1,14 @@
 import sys
 import asyncio
+import argparse
 import configparser
 import RPi.GPIO as GPIO
 import aiohttp
 from aiohttp import web, WSMsgType
 from MFRC522 import SimpleMFRC522
+
+
+DEFAULT_CONF_PATH = '../musicboxd.conf'
 
 conf = None
 
@@ -99,6 +103,8 @@ class WebApi:
                         path='../htdocs/static',
                         name='static')
 
+        self.websockets = []
+
     def get_app(self):
         return self.app
 
@@ -120,11 +126,14 @@ class WebApi:
         tag = await request.json()
         print('Create tag: ', tag)
         self.rfid_reader.write_next_tag(tag['content'])
+        asyncio.ensure_future(self.send('Test'), loop=self.loop)
         return web.json_response({ 'content' : 'xx' })
 
     async def websocket(self, request):
         ws = web.WebSocketResponse()
         await ws.prepare(request)
+
+        self.websockets.append(ws)
 
         async for msg in ws:
             if msg.type == WSMsgType.TEXT:
@@ -136,13 +145,26 @@ class WebApi:
                 print('ws connection closed with exception %s' %
                 ws.exception())
 
+        self.websockets.remove(ws)
+
         return ws
 
+    async def send(self, message):
+        for ws in self.websockets:
+            await ws.send_str(message)
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="")
+    parser.add_argument('-c', '--conf', default=DEFAULT_CONF_PATH, help="Path to the config file")
+    return parser.parse_args()
 
 def main():
     global conf
+
+    args = parse_args()
+
     conf = configparser.ConfigParser(defaults={})
-    conf.read('../musicboxd.conf')
+    conf.read(args.conf)
 
     loop = asyncio.get_event_loop()
 
