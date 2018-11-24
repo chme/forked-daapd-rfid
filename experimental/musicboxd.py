@@ -203,7 +203,7 @@ def main():
     loop.run_until_complete(runner.setup())
 
     try:
-        site = web.TCPSite(runner, '127.0.0.1', 9090)
+        site = web.TCPSite(runner, '0.0.0.0', 9090)
         loop.run_until_complete(site.start())
 
         rfid_reader = RfidReader(loop)
