@@ -25,14 +25,13 @@ export default {
       null,
       { reconnectInterval: 5000 }
     )
+    // socket.debug = true
 
     socket.onopen = function () {
       socket.send(JSON.stringify({ notify: ['update', 'player', 'options', 'outputs', 'volume', 'spotify'] }))
     }
-    socket.onclose = function () {
-    }
-    socket.onerror = function () {
-    }
+    socket.onclose = function () {}
+    socket.onerror = function () {}
     socket.onmessage = function (response) {
       alert(response.data)
     }
