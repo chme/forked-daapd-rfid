@@ -24,7 +24,6 @@ class RfidReader:
         self.reader.cancel_wait()
 
     def write_next_tag(self, content):
-        print('Write next tag: ', content)
         self.next_tag = content
         self.mode = self.MODE_WRITE
 
@@ -34,7 +33,6 @@ class RfidReader:
                 while self.run:
                     await self.loop.run_in_executor(None, self.reader.wait_for_tag_available)
                     uid, content = self.reader.read()
-                    print('Tag found', uid, content)
 
                     if uid == None:
                         print('Failed to read tag id')
@@ -57,15 +55,12 @@ class RfidReader:
                         print('ERR Unknown mode', self.mode)
 
             except asyncio.CancelledError:
-                print('>>>> CancelledError')
+                pass
 
     async def play(self, uid, content, client):
-        print('PLAY', id, content)
-
         self.tags.append({ 'id' : id, 'content' : content })
 
         async with client.put(self.forked_daapd_url + '/api/queue/clear') as resp:
-            print('clear: ', resp.status)
             assert resp.status < 300
             async with client.put(self.forked_daapd_url + '/api/player/shuffle?state=false') as resp:
                 assert resp.status < 300
@@ -75,10 +70,7 @@ class RfidReader:
                         assert resp.status < 300
 
     async def pause(self, client):
-        print('PAUSE')
-
         async with client.put(self.forked_daapd_url + '/api/player/pause') as resp:
-            print('clear: ', resp.status)
             assert resp.status < 300
 
     def write_tag(self, uid, content):

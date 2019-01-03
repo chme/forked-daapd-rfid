@@ -65,8 +65,6 @@ class WebServer:
             if msg.type == WSMsgType.TEXT:
                 if msg.data == 'close':
                     await ws.close()
-                else:
-                    await ws.send_str(msg.data + '/answer')
             elif msg.type == WSMsgType.ERROR:
                 print('ws connection closed with exception %s' % ws.exception())
 
