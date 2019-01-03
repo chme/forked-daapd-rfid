@@ -3,6 +3,7 @@ import asyncio
 import aiohttp
 
 
+
 class ForkedDaapd:
 
     def __init__(self, loop):
@@ -32,18 +33,13 @@ class ForkedDaapd:
 
             print('Session closed')
 
-    async def play(self, uri):
-        async with self.client as client:
-            async with client.put('http://localhost:3689' + '/api/queue/clear') as resp:
-                assert resp.status < 300
-                async with client.put('http://localhost:3689' + '/api/player/shuffle?state=false') as resp:
-                    assert resp.status < 300
-                    async with client.post('http://localhost:3689' + '/api/queue/items/add?uris=' + content) as resp:
-                        assert resp.status < 300
-                        async with client.put('http://localhost:3689' + '/api/player/play') as resp:
-                            assert resp.status < 300
 
-    async def pause(self):
-        async with self.client as client:
-            async with client.put('http://localhost:3689' + '/api/player/pause') as resp:
-                assert resp.status < 300
+loop = asyncio.get_event_loop()
+forked_daapd = ForkedDaapd(loop)
+
+try:
+    print("(Press CTRL+C to quit)")
+    asyncio.ensure_future(forked_daapd.notify_loop(), loop=loop)
+    loop.run_forever()
+except (KeyboardInterrupt):
+    pass

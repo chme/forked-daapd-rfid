@@ -55,7 +55,8 @@ def main():
 
     loop = asyncio.get_event_loop()
 
-    web_server = webserver.WebServer(loop, conf)
+    web_socket = webserver.WebSocket()
+    web_server = webserver.WebServer(loop, web_socket, conf)
 
     try:
         web_server.start()

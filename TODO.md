@@ -1,5 +1,31 @@
 
 
+ForkedDaapd
+- manage connection to forked-daapd server
+  - connect on startup
+  - reconnect if connection lost
+- read status (playback, volume, progress)
+- notify status changes
+
+RfidReader
+- read tags
+- write tags
+
+
+WebServer
+- write tags
+- show tags
+
+
+Loop
+- 
+
+
+
+
+
+
+
 musicbox:
 
 - close websockets on exit
