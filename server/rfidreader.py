@@ -5,78 +5,57 @@ import aiohttp
 
 class RfidReader:
 
-    MODE_READ    = 1
-    MODE_WRITE   = 2
-
-    run = True
-
-    tags = []
-
     def __init__(self, loop, conf):
         self.loop = loop
-        self.mode = self.MODE_READ
         self.reader = SimpleMFRC522.SimpleMFRC522()
         self.forked_daapd_url = 'http://' + conf.get('forked-daapd', 'host') + ':' + conf.get('forked-daapd', 'port')
-        self.next_tag = None
+        self.current_tag_id = None
+        self.current_tag_content = None
+        self.current_task = None
 
     def cancel(self):
-        self.run = False
         self.reader.cancel_wait()
 
-    def write_next_tag(self, content):
-        self.next_tag = content
-        self.mode = self.MODE_WRITE
+    async def read_tags(self):
+        try:
+            print('Read tag')
+            self.current_task = self.loop.run_in_executor(None, self.reader.wait_for_tag_available)
+            await self.current_task
 
-    async def handle_tags(self):
-        async with aiohttp.ClientSession() as client:
-            try:
-                while self.run:
-                    await self.loop.run_in_executor(None, self.reader.wait_for_tag_available)
-                    uid, content = self.reader.read()
+            self.current_tag_id, self.current_tag_content = self.reader.read()
+            print('  Read tag : {0}'.format(self.current_tag_content))
+            # TODO await self.play(uid, content, client)
 
-                    if uid == None:
-                        print('Failed to read tag id')
-                        continue
+            await self.loop.run_in_executor(None, self.reader.wait_for_tag_removed)
+            print('  Read tag : removed')
+            self.current_tag_id = None
+            self.current_tag_content = None
 
-                    if self.mode == self.MODE_READ:
-                        await self.play(uid, content, client)
-                    elif self.mode == self.MODE_WRITE:
-                        self.write_tag(uid, content)
-                    else:
-                        print('ERR Unknown mode', self.mode)
+            # Reschedule task
+            asyncio.ensure_future(self.read_tags(), loop=self.loop)
+        except asyncio.CancelledError:
+            print('Cancel read') # TODO
+            self.reader.cancel_wait()
 
-                    await self.loop.run_in_executor(None, self.reader.wait_for_tag_removed)
+    async def write_tag(self, content):
+        try:
+            print('Write tag')
+            if self.current_task:
+                self.current_task.cancel()
 
-                    if self.mode == self.MODE_READ:
-                        await self.pause(client)
-                    elif self.mode == self.MODE_WRITE:
-                        self.mode = self.MODE_READ
-                    else:
-                        print('ERR Unknown mode', self.mode)
+            await self.loop.run_in_executor(None, self.reader.wait_for_tag_available)
+            uid, content = self.reader.read()
+            print('  Write tag : start')
+            self.reader.write_text(uid, content)
+            print('  Write tag : written')
 
-            except asyncio.CancelledError:
-                pass
+            await self.loop.run_in_executor(None, self.reader.wait_for_tag_removed)
+            print('  Write tag : removed')
+            self.current_tag_id = None
+            self.current_tag_content = None
 
-    async def play(self, uid, content, client):
-        self.tags.append({ 'id' : id, 'content' : content })
-
-        async with client.put(self.forked_daapd_url + '/api/queue/clear') as resp:
-            assert resp.status < 300
-            async with client.put(self.forked_daapd_url + '/api/player/shuffle?state=false') as resp:
-                assert resp.status < 300
-                async with client.post(self.forked_daapd_url + '/api/queue/items/add?uris=' + content) as resp:
-                    assert resp.status < 300
-                    async with client.put(self.forked_daapd_url + '/api/player/play') as resp:
-                        assert resp.status < 300
-
-    async def pause(self, client):
-        async with client.put(self.forked_daapd_url + '/api/player/pause') as resp:
-            assert resp.status < 300
-
-    def write_tag(self, uid, content):
-        print('WRITE TAG', uid, content)
-
-        if (self.next_tag):
-            self.reader.write_text(uid, self.next_tag)
-
-        self.next_tag = None
+            # Reschedule task
+            asyncio.ensure_future(self.read_tags(), loop=self.loop)
+        except asyncio.CancelledError:
+            print('Cancel write') # TODO
+            self.reader.cancel_wait()

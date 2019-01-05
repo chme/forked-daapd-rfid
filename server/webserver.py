@@ -84,5 +84,5 @@ class WebServer:
     async def api_tags_create(self, request):
         tag = await request.json()
         print('Create tag: ', tag)
-        self.rfid_reader.write_next_tag(tag['content'])
+        await self.rfid_reader.write_tag(tag['content'])
         return web.json_response({ 'content' : 'xx' })

@@ -62,7 +62,7 @@ def main():
         web_server.start()
 
         rfid_reader = rfidreader.RfidReader(loop, conf)
-        asyncio.ensure_future(rfid_reader.handle_tags(), loop=loop)
+        asyncio.ensure_future(rfid_reader.read_tags(), loop=loop)
 
         web_server.set_rfid(rfid_reader)
 
