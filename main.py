@@ -8,7 +8,7 @@ from logging.handlers import TimedRotatingFileHandler
 import sys
 from aiohttp import web
 
-from server import webserver, rfidreader
+from server import webserver, rfidreader, forked_daapd
 
 
 DEFAULT_CONF_PATH = './musicboxd.conf'
@@ -16,7 +16,7 @@ DEFAULT_LOG_PATH  = './musicboxd.log'
 
 
 def deflog(path):
-    log = logging.getLogger('musicboxd')
+    log = logging.getLogger('main')
     log.setLevel(logging.INFO)
 
     fmtr = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -61,7 +61,13 @@ def main():
     try:
         web_server.start()
 
-        rfid_reader = rfidreader.RfidReader(loop, conf)
+        daapd = forked_daapd.ForkedDaapd(loop,
+                                         conf.get('forked-daapd', 'host'),
+                                         conf.get('forked-daapd', 'port'),
+                                         conf.get('forked-daapd', 'websocket_port'))
+        asyncio.ensure_future(daapd.notify_loop(), loop=loop)
+
+        rfid_reader = rfidreader.RfidReader(loop, daapd)
         asyncio.ensure_future(rfid_reader.read_tags(), loop=loop)
 
         web_server.set_rfid(rfid_reader)
@@ -80,7 +86,6 @@ def main():
                     return_exceptions=True)
         tasks.add_done_callback(lambda t: loop.stop())
         tasks.cancel()
-        rfid_reader.cancel()
     if sys.version_info >= (3, 6):
         if hasattr(loop, 'shutdown_asyncgens'):
             loop.run_until_complete(loop.shutdown_asyncgens())

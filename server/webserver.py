@@ -82,7 +82,10 @@ class WebServer:
         return web.json_response({ 'tags' : [ { 'id' : 123, 'content' : 'library:album:123' },  { 'id' : 456, 'content' : 'library:album:456' }]})
 
     async def api_tags_create(self, request):
-        tag = await request.json()
-        print('Create tag: ', tag)
-        await self.rfid_reader.write_tag(tag['content'])
-        return web.json_response({ 'content' : 'xx' })
+        try:
+            tag = await request.json()
+            print('Create tag: ', tag)
+            await self.rfid_reader.write_tag(tag['content'])
+            return web.json_response({ 'content' : 'xx' })
+        except asyncio.CancelledError:
+            print('Cancel CREATE') # TODO
