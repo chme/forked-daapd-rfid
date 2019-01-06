@@ -48,9 +48,11 @@ class ForkedDaapd:
         log.error('[daapd] Notify loop closed')
 
     async def play(self, uri):
+        log.debug('[daapd] Start playback for uri={0}'.format(uri))
         async with self.client.post('{0}/api/queue/items/add?uris={1}&clear=true&shuffle=false&playback=start'.format(self.url, uri)) as resp:
-            log.info('[daapd] Play request: {0}'.format(resp.status))
+            log.info('[daapd] Play request status={0}'.format(resp.status))
 
     async def pause(self):
+        log.debug('[daapd] Pause playback')
         async with self.client.put('{0}/api/player/pause'.format(self.url)) as resp:
-            log.info('[daapd] Pause request: {0}'.format(resp.status))
+            log.info('[daapd] Pause request status={0}'.format(resp.status))

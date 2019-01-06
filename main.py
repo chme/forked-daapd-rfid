@@ -82,7 +82,7 @@ def main():
                                          conf.get('forked-daapd', 'websocket_port'))
         asyncio.ensure_future(daapd.notify_loop(), loop=loop)
 
-        rfid_reader = rfidreader.RfidReader(loop, daapd)
+        rfid_reader = rfidreader.RfidReader(loop, daapd, web_socket)
         asyncio.ensure_future(rfid_reader.read_tags(), loop=loop)
 
         web_server.set_rfid(rfid_reader)
