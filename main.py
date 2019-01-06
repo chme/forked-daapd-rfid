@@ -3,8 +3,7 @@ import argparse
 import asyncio
 import configparser
 import logging
-from logging import StreamHandler
-from logging.handlers import TimedRotatingFileHandler
+import logging.config
 import sys
 from aiohttp import web
 
@@ -15,27 +14,43 @@ DEFAULT_CONF_PATH = './musicboxd.conf'
 DEFAULT_LOG_PATH  = './musicboxd.log'
 
 
-def deflog(path):
-    log = logging.getLogger('main')
-    log.setLevel(logging.INFO)
+def init_log(log_path):
+    logging.config.dictConfig({
+        'version': 1,
+        'formatters': {
+            'default': {'format': '%(asctime)s %(levelname)s [%(name)s] %(message)s', 'datefmt': '%Y-%m-%d %H:%M:%S'}
+        },
+        'handlers': {
+            'console': {
+                'level': 'DEBUG',
+                'class': 'logging.StreamHandler',
+                'formatter': 'default',
+                'stream': 'ext://sys.stdout'
+            },
+            'file': {
+                'level': 'DEBUG',
+                'class': 'logging.handlers.TimedRotatingFileHandler',
+                'formatter': 'default',
+                'filename': log_path,
+                'encoding': 'utf=8',
+                'when': 'D',
+                'interval': 7,
+                'backupCount': 3
+            }
+        },
+        'loggers': {
+            'main': { 'level': 'DEBUG', 'handlers': ['console', 'file'] },
+            'aiohttp.access': { 'level': 'DEBUG', 'handlers': ['console', 'file'] },
+            'aiohttp.client': { 'level': 'DEBUG', 'handlers': ['console', 'file'] },
+            'aiohttp.internal': { 'level': 'DEBUG', 'handlers': ['console', 'file'] },
+            'aiohttp.server': { 'level': 'DEBUG', 'handlers': ['console', 'file'] },
+            'aiohttp.web': { 'level': 'DEBUG', 'handlers': ['console', 'file'] },
+            'aiohttp.websocket': { 'level': 'DEBUG', 'handlers': ['console', 'file'] }
+        },
+        'disable_existing_loggers': False
+    })
 
-    fmtr = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-
-    filehandler = TimedRotatingFileHandler(
-                path,
-                encoding='utf=8',
-                when='D',
-                interval=7,
-                backupCount=8,
-              )
-    filehandler.setFormatter(fmtr)
-    log.addHandler(filehandler)
-
-    syserrhandler = StreamHandler()
-    syserrhandler.setFormatter(fmtr)
-    log.addHandler(syserrhandler)
-
-    return log
+    return logging.getLogger('main')
 
 def parse_args():
     parser = argparse.ArgumentParser(description="")
@@ -46,7 +61,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    log = deflog(args.log)
+    log = init_log(args.log)
     log.info("Starting musicboxd with arguments '%s'", vars(args))
 
 
