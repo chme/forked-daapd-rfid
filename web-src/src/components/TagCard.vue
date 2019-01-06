@@ -8,8 +8,7 @@
       </div>
       <div class="content">
         Content: {{ tag.content }}<br>
-        Tag-ID: {{ tag.id }}<br>
-        <time datetime="2016-1-1">11:09 PM - 1 Jan 2016</time>
+        Tag-ID: {{ tag.id }}
       </div>
     </div>
   </div>

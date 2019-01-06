@@ -18,13 +18,8 @@ module.exports = {
   devServer: {
     // Proxy API calls to the server running on localhost:9090
     proxy: {
-      '/api': {
+      '/': {
         target: 'http://localhost:9090'
-      },
-      '/ws': {
-        target: 'http://localhost:9090/ws',
-        ws: true,
-        changeOrigin: true
       }
     }
   }

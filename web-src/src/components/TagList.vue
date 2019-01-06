@@ -15,10 +15,10 @@
       <p class="content has-text-centered">
         <a class="button is-info is-outlined is-rounded" v-on:click="showCreateTag = true"><span class="icon"><i class="mdi mdi-tag-plus"></i></span> <span>Create tag!</span></a>
       </p>
-      <p class="title is-5">Last tags</p>
+      <p class="title is-5">Current tag</p>
       <div class="columns is-multiline">
-        <div class="column is-one-quarter" v-for="tag in tags" :key="tag.id">
-          <TagCard :tag="tag"/>
+        <div class="column is-one-third">
+          <TagCard :tag="current_tag"/>
         </div>
       </div>
     </div>
@@ -29,7 +29,6 @@
 <script>
 import CreateTag from './CreateTag.vue'
 import TagCard from './TagCard.vue'
-import axios from 'axios'
 
 export default {
   name: 'TagList',
@@ -38,20 +37,17 @@ export default {
   },
   data: function () {
     return {
-      showCreateTag: false,
-      tags: []
+      showCreateTag: false
     }
   },
-  created: function () {
-    this.loadTags()
+
+  computed: {
+    current_tag () {
+      return this.$store.state.current_tag
+    }
   },
 
   methods: {
-    loadTags: function () {
-      axios.get('/api/tags').then(({ data }) => {
-        this.tags = data.tags
-      })
-    }
   }
 }
 </script>

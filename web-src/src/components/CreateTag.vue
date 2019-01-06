@@ -53,7 +53,8 @@ export default {
           'expression': 'artist includes "' + this.search_query + '" or album includes "' + this.search_query + '"'
         }
 
-        axios.get(this.$store.state.conf.server + '/api/search', { params: searchParams }).then(({ data }) => {
+        var host = this.$store.state.conf.daapd_host === 'localhost' ? window.location.hostname : this.$store.state.conf.daapd_host
+        axios.get('http://' + host + ':' + this.$store.state.conf.daapd_port + '/api/search', { params: searchParams }).then(({ data }) => {
           this.albums = data.albums ? data.albums : { items: [], total: 0 }
         })
       }

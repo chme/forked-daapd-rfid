@@ -22,7 +22,7 @@ class RfidReader:
     def __reset_current_tag(self):
         self.current_tag_id = None
         self.current_tag_content = None
-        asyncio.ensure_future(self.web_socket.send({ 'tags': { 'current': {} } }))
+        asyncio.ensure_future(self.web_socket.send_current_tag(self.current_tag_id, self.current_tag_content))
 
     def current_tag(self):
         return self.current_tag_id, self.current_tag_content
@@ -35,7 +35,7 @@ class RfidReader:
 
             self.current_tag_id, self.current_tag_content = self.reader.read()
             log.info('[rfid] New tag found with id={0} and content={1}'.format(self.current_tag_id, self.current_tag_content))
-            asyncio.ensure_future(self.web_socket.send({ 'tags': { 'current': { 'id': self.current_tag_id, 'content': self.current_tag_content } } }))
+            asyncio.ensure_future(self.web_socket.send_current_tag(self.current_tag_id, self.current_tag_content))
             await self.daapd.play(self.current_tag_content)
 
             log.debug('[rfid] Wating for tag removed to pause playback')

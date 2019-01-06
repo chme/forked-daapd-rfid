@@ -6,7 +6,12 @@ Vue.use(Vuex)
 export default new Vuex.Store({
   state: {
     conf: {
-      'server': ''
+      'daapd_host': '',
+      'daapd_port': 0
+    },
+    current_tag: {
+      'id': 0,
+      'content': ''
     }
   },
 
@@ -16,6 +21,9 @@ export default new Vuex.Store({
   mutations: {
     setConf (state, conf) {
       state.conf = conf
+    },
+    setCurrentTag (state, tag) {
+      state.current_tag = tag
     }
   },
 

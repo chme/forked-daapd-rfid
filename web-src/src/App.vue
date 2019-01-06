@@ -17,9 +17,13 @@ export default {
     Navbar, TagList
   },
   created: function () {
-    axios.get('/api/conf').then(response => {
-      this.$store.commit('setConf', response.data)
+    axios.get('/api/conf').then(({ data }) => {
+      this.$store.commit('setConf', data)
     })
+    axios.get('/api/tags/current').then(({ data }) => {
+      this.$store.commit('setCurrentTag', data)
+    })
+
     var socket = new ReconnectingWebSocket(
       'ws://' + window.location.hostname + ':' + window.location.port + '/ws',
       null,
@@ -27,13 +31,17 @@ export default {
     )
     // socket.debug = true
 
+    const vm = this
     socket.onopen = function () {
       socket.send(JSON.stringify({ notify: ['update', 'player', 'options', 'outputs', 'volume', 'spotify'] }))
     }
     socket.onclose = function () {}
     socket.onerror = function () {}
     socket.onmessage = function (response) {
-      alert(response.data)
+      var data = JSON.parse(response.data)
+      if (data.type === 'current_tag') {
+        vm.$store.commit('setCurrentTag', data.current_tag)
+      }
     }
   }
 }
