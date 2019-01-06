@@ -44,12 +44,16 @@ class WebSocket:
 
 class WebServer:
 
-    def __init__(self, loop, web_socket, rfid, conf):
+    def __init__(self, loop, web_socket, rfid, host, port, daapd_host, daapd_port):
         self.loop = loop
         self.web_socket = web_socket
         self.rfid_reader = rfid
 
-        self.forked_daapd_url = 'http://' + conf.get('forked-daapd', 'host') + ':' + conf.get('forked-daapd', 'port')
+        self.host = host
+        self.port = port
+        self.daapd_host = daapd_host
+        self.daapd_port = daapd_port
+
         self.app = web.Application(loop=loop)
         self.app.add_routes([
                         web.get('/', self.index),
@@ -69,7 +73,7 @@ class WebServer:
     def start(self):
         log.debug('[web] Starting webserver ...')
         self.loop.run_until_complete(self.runner.setup())
-        self.site = web.TCPSite(self.runner, '0.0.0.0', 9090)
+        self.site = web.TCPSite(self.runner, self.host, self.port)
         self.loop.run_until_complete(self.site.start())
         log.info('[web] Webserver running on {}'.format(self.site.name))
 
@@ -83,7 +87,7 @@ class WebServer:
         return web.FileResponse('htdocs/index.html')
 
     async def api_conf(self, request):
-        data = { 'server': self.forked_daapd_url }
+        data = { 'daapd_host': self.daapd_host, 'daapd_port': self.daapd_port }
         return web.json_response(data)
 
     async def api_tags_current(self, request):

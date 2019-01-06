@@ -62,7 +62,7 @@ def main():
     args = parse_args()
 
     log = init_log(args.log)
-    log.info("Starting musicboxd with arguments '%s'", vars(args))
+    log.info('Starting musicboxd with arguments {}'.format(vars(args)))
 
 
     conf = configparser.ConfigParser(defaults={})
@@ -79,10 +79,18 @@ def main():
                                          conf.get('forked-daapd', 'websocket_port'))
         asyncio.ensure_future(daapd.notify_loop(), loop=loop)
 
-        rfid_reader = rfidreader.RfidReader(loop, daapd, web_socket)
+        rfid_reader = rfidreader.RfidReader(loop,
+                                            daapd,
+                                            web_socket)
         asyncio.ensure_future(rfid_reader.read_tags(), loop=loop)
 
-        web_server = webserver.WebServer(loop, web_socket, rfid_reader, conf)
+        web_server = webserver.WebServer(loop,
+                                         web_socket,
+                                         rfid_reader,
+                                         conf.get('server', 'host'),
+                                         conf.get('server', 'port'),
+                                         conf.get('forked-daapd', 'host'),
+                                         conf.get('forked-daapd', 'port'))
         web_server.start()
 
         try:
