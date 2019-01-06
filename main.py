@@ -47,7 +47,7 @@ def init_log(log_path):
             'aiohttp.web': { 'level': 'DEBUG', 'handlers': ['console', 'file'] },
             'aiohttp.websocket': { 'level': 'DEBUG', 'handlers': ['console', 'file'] }
         },
-        'disable_existing_loggers': False
+        'disable_existing_loggers': True
     })
 
     return logging.getLogger('main')

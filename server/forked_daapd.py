@@ -43,6 +43,7 @@ class ForkedDaapd:
                 except asyncio.CancelledError:
                     log.info('[daapd] Connection retry canceled')
                     await self.client.close()
+                    break
 
         log.error('[daapd] Notify loop closed')
 
