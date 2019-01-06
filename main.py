@@ -88,8 +88,7 @@ def main():
         web_server.set_rfid(rfid_reader)
 
         try:
-            print("======== Running on {} ========\n"
-                  "(Press CTRL+C to quit)".format(web_server.get_sitename()))
+            print('(Press CTRL+C to quit)')
             loop.run_forever()
         except (KeyboardInterrupt):
             pass

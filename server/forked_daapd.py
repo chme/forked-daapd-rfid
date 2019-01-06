@@ -28,7 +28,7 @@ class ForkedDaapd:
                     log.info('[daapd] Connection to forked-daapd websocket established')
                     await ws.send_json({ 'notify': ['player', 'outputs', 'volume'] })
                     async for msg in ws:
-                        print(msg.data)
+                        log.debug('[daapd] New message from websocket with type={0} and data={0}'.format(msg.type, msg.data))
                         if msg.type == aiohttp.WSMsgType.TEXT:
                             if msg.data == 'close':
                                 await ws.close()

@@ -8,9 +8,10 @@ log = logging.getLogger('main')
 
 class RfidReader:
 
-    def __init__(self, loop, daapd):
+    def __init__(self, loop, daapd, web_socket):
         self.loop = loop
         self.daapd = daapd
+        self.web_socket = web_socket
         self.reader = SimpleMFRC522.SimpleMFRC522()
 
         self.current_tag_id = None
