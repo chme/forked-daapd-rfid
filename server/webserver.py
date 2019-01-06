@@ -44,15 +44,17 @@ class WebSocket:
 
 class WebServer:
 
-    def __init__(self, loop, web_socket, conf):
+    def __init__(self, loop, web_socket, rfid, conf):
         self.loop = loop
         self.web_socket = web_socket
+        self.rfid_reader = rfid
+
         self.forked_daapd_url = 'http://' + conf.get('forked-daapd', 'host') + ':' + conf.get('forked-daapd', 'port')
         self.app = web.Application(loop=loop)
         self.app.add_routes([
                         web.get('/', self.index),
                         web.get('/api/conf', self.api_conf),
-                        web.get('/api/tags', self.api_tags),
+                        web.get('/api/tags/current', self.api_tags_current),
                         web.post('/api/tags/create', self.api_tags_create),
                         web.get('/ws', self.web_socket.websocket)])
         self.app.router.add_static(
@@ -65,20 +67,17 @@ class WebServer:
         self.runner = web.AppRunner(self.app)
 
     def start(self):
-        log.debug('[web] Starting webserver')
+        log.debug('[web] Starting webserver ...')
         self.loop.run_until_complete(self.runner.setup())
         self.site = web.TCPSite(self.runner, '0.0.0.0', 9090)
         self.loop.run_until_complete(self.site.start())
         log.info('[web] Webserver running on {}'.format(self.site.name))
 
     def cleanup(self):
-        log.debug('[web] Webserver cleanup')
+        log.debug('[web] Webserver cleanup ...')
         self.loop.run_until_complete(self.web_socket.close())
         self.loop.run_until_complete(self.runner.cleanup())
         log.debug('[web] Webserver cleanup complete')
-
-    def set_rfid(self, rfid):
-        self.rfid_reader = rfid
 
     async def index(self, request):
         return web.FileResponse('htdocs/index.html')
@@ -87,14 +86,16 @@ class WebServer:
         data = { 'server': self.forked_daapd_url }
         return web.json_response(data)
 
-    async def api_tags(self, request):
-        return web.json_response({ 'tags' : [ { 'id' : 123, 'content' : 'library:album:123' },  { 'id' : 456, 'content' : 'library:album:456' }]})
+    async def api_tags_current(self, request):
+        uid, content = self.rfid_reader.current_tag()
+        return web.json_response({ 'id': uid, 'content': content })
 
     async def api_tags_create(self, request):
         try:
             tag = await request.json()
-            print('Create tag: ', tag)
+            log.info('[web] Create new tag request for content={}'.format(tag['content']))
             await self.rfid_reader.write_tag(tag['content'])
+            log.info('[web] Tag created')
             return web.json_response({ 'content' : 'xx' })
         except asyncio.CancelledError:
-            print('Cancel CREATE') # TODO
+            log.warning('[web] Creating new tag task canceled')

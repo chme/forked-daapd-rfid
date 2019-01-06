@@ -70,11 +70,8 @@ def main():
 
     loop = asyncio.get_event_loop()
 
-    web_socket = webserver.WebSocket()
-    web_server = webserver.WebServer(loop, web_socket, conf)
-
     try:
-        web_server.start()
+        web_socket = webserver.WebSocket()
 
         daapd = forked_daapd.ForkedDaapd(loop,
                                          conf.get('forked-daapd', 'host'),
@@ -85,7 +82,8 @@ def main():
         rfid_reader = rfidreader.RfidReader(loop, daapd, web_socket)
         asyncio.ensure_future(rfid_reader.read_tags(), loop=loop)
 
-        web_server.set_rfid(rfid_reader)
+        web_server = webserver.WebServer(loop, web_socket, rfid_reader, conf)
+        web_server.start()
 
         try:
             print('(Press CTRL+C to quit)')
