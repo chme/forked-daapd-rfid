@@ -41,6 +41,8 @@ export default {
       var data = JSON.parse(response.data)
       if (data.type === 'current_tag') {
         vm.$store.commit('setCurrentTag', data.current_tag)
+      } else if (data.type === 'message') {
+        vm.$store.commit('setMessage', data.message)
       }
     }
   }

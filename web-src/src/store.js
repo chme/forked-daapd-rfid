@@ -12,7 +12,8 @@ export default new Vuex.Store({
     current_tag: {
       'id': 0,
       'content': ''
-    }
+    },
+    message: { 'id': '', 'text': '' }
   },
 
   getters: {
@@ -24,6 +25,9 @@ export default new Vuex.Store({
     },
     setCurrentTag (state, tag) {
       state.current_tag = tag
+    },
+    setMessage (state, message) {
+      state.message = message
     }
   },
 

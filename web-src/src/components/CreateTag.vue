@@ -2,7 +2,7 @@
   <div class="modal is-active">
     <div class="modal-background" v-on:click="$emit('close')"></div>
     <div class="modal-content">
-      <div class="box">
+      <div class="box" v-if="step === 'select'">
         <p class="title is-5">Select album</p>
         <form v-on:submit.prevent="search">
           <div class="field">
@@ -28,6 +28,11 @@
           </div>
         </article>
       </div>
+      <article v-if="step === 'write'" class="message is-warning">
+        <div class="message-body">
+          <p>{{ message.text }}</p>
+        </div>
+      </article>
     </div>
     <button class="modal-close is-large" aria-label="close" v-on:click="$emit('close')"></button>
   </div>
@@ -40,8 +45,15 @@ export default {
   name: 'CreateTag',
   data: function () {
     return {
+      step: 'select',
       search_query: '',
       albums: { items: [], total: 0 }
+    }
+  },
+
+  computed: {
+    message () {
+      return this.$store.state.message
     }
   },
 
@@ -61,6 +73,8 @@ export default {
     },
 
     createTag: function (content) {
+      this.$store.commit('setMessage', { 'id': 'WRITE_TAG', 'text': 'Hold a Classic 1K MIFARE tag against the NFC reader Module (MFRC522) to create a new tag.' })
+      this.step = 'write'
       axios.post('/api/tags/create', { 'content': content }).then(() => {
         // console.log(data)
       })

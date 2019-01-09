@@ -66,7 +66,7 @@ class RfidReader:
             uid, content = self.reader.read()
             log.info('[rfid] Tag found with id={0} and content={1}'.format(uid, content))
             self.reader.write_text(uid, new_content)
-            asyncio.ensure_future(self.web_socket.send({ 'tags': { 'message': 'Tag created' } }))
+            asyncio.ensure_future(self.web_socket.send_message('WRITE_SUCCESS', 'Tag created successfully. Please remove tag to proceed.'))
 
             log.info('[rfid] Tag written. Waiting for tag removed')
             self.current_task = self.loop.run_in_executor(None, self.reader.wait_for_tag_removed)
