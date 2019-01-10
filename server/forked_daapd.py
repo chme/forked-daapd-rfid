@@ -24,6 +24,7 @@ class ForkedDaapd:
     async def notify_loop(self):
         while True:
             try:
+                log.debug('[daapd] Connecting to forked-daapd websocket on url={}'.format(self.websocket_url))
                 async with self.client.ws_connect(self.websocket_url, protocols=('notify',)) as ws:
                     log.info('[daapd] Connection to forked-daapd websocket established')
                     await ws.send_json({ 'notify': ['player', 'outputs', 'volume'] })
