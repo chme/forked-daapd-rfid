@@ -5,7 +5,6 @@ import configparser
 import logging
 import logging.config
 import sys
-from aiohttp import web
 
 from server import webserver, rfidreader, forked_daapd
 

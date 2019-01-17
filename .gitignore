@@ -114,3 +114,5 @@ dmypy.json
 # Dummy implementations for RPi.GPIO and MFRC522
 /MFRC522
 /RPi
+/.project
+/.pydevproject
