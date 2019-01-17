@@ -1,7 +1,6 @@
 
-from MFRC522 import SimpleMFRC522
+from MFRC522 import simple_mfrc522
 import asyncio
-import aiohttp
 import logging
 
 log = logging.getLogger('main')
@@ -12,12 +11,20 @@ class RfidReader:
         self.loop = loop
         self.daapd = daapd
         self.web_socket = web_socket
-        self.reader = SimpleMFRC522.SimpleMFRC522()
+        self.reader = simple_mfrc522.SimpleMFRC522()
 
         self.current_tag_id = None
         self.current_tag_content = None
 
         self.current_task = None
+
+    def start(self):
+        self.reader.init()
+        log.debug('[rfid] Reschedule read task')
+        asyncio.ensure_future(self.read_tags(), loop=self.loop)
+
+    def cleanup(self):
+        self.reader.cleanup()
 
     def __reset_current_tag(self):
         self.current_tag_id = None
@@ -30,7 +37,7 @@ class RfidReader:
     async def read_tags(self):
         try:
             log.debug('[rfid] Read task started. Wating for new tag to start playback')
-            self.current_task = self.loop.run_in_executor(None, self.reader.read_text())
+            self.current_task = self.loop.run_in_executor(None, self.reader.read_text)
             status, uid, text = await self.current_task
 
             if status:

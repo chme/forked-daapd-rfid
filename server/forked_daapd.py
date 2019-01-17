@@ -17,8 +17,12 @@ class ForkedDaapd:
         self.websocket_port = websocket_port
         self.url = 'http://{0}:{1}'.format(host, port)
         self.websocket_url = 'http://{0}:{1}'.format(host, websocket_port)
+        
+        self.client = None
 
-        self.client = loop.run_until_complete(self.__create_session())
+    def start(self):
+        self.client = self.loop.run_until_complete(self.__create_session())
+        asyncio.ensure_future(self.notify_loop(), loop=self.loop)
 
     async def __create_session(self):
         return aiohttp.ClientSession()

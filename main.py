@@ -76,12 +76,12 @@ def main():
                                          conf.get('forked-daapd', 'host'),
                                          conf.get('forked-daapd', 'port'),
                                          conf.get('forked-daapd', 'websocket_port'))
-        asyncio.ensure_future(daapd.notify_loop(), loop=loop)
+        daapd.start()
 
         rfid_reader = rfidreader.RfidReader(loop,
                                             daapd,
                                             web_socket)
-        asyncio.ensure_future(rfid_reader.read_tags(), loop=loop)
+        rfid_reader.start()
 
         web_server = webserver.WebServer(loop,
                                          web_socket,
@@ -99,6 +99,7 @@ def main():
             pass
     finally:
         web_server.cleanup()
+        rfid_reader.cleanup()
         tasks = asyncio.gather(
                     *asyncio.Task.all_tasks(loop=loop),
                     loop=loop,
