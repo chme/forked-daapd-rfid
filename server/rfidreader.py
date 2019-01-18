@@ -6,6 +6,19 @@ import logging
 
 log = logging.getLogger('main')
 
+class Timer:
+    def __init__(self, timeout, callback):
+        self._timeout = timeout
+        self._callback = callback
+        self._task = asyncio.ensure_future(self._job())
+
+    async def _job(self):
+        await asyncio.sleep(self._timeout)
+        await self._callback()
+
+    def cancel(self):
+        self._task.cancel()
+
 class RfidReader:
 
     def __init__(self, loop, daapd, web_socket):
@@ -18,6 +31,7 @@ class RfidReader:
         self.current_tag_content = None
 
         self.current_task = None
+        self.timer = None
 
     def start(self):
         log.debug('[rfid] Starting RFID reader ...')
@@ -90,14 +104,17 @@ class RfidReader:
                 log.debug('[rfid] Current rfid task completed. Coninue writing tag')
 
             log.info('[rfid] Waiting for tag to write new content={0}'.format(new_content))
+            self.timer = Timer(30, self.reader.cancel_wait)
             self.current_task = self.loop.run_in_executor(None, self.reader.write_text, new_content)
-            status, uid, old_data = await self.current_task
+            status, uid, __ = await self.current_task
 
             if status == mfrc522.StatusCode.STATUS_CANCELED:
                 log.debug('[rfid] Wating for tag write was canceled. Quit read task')
                 log.warning('[rfid] Reschedule read task after write task was canceled')
                 asyncio.ensure_future(self.read_tags(), loop=self.loop)
                 return
+            
+            self.timer.cancel()
             
             if status:
                 asyncio.ensure_future(self.web_socket.send_message('WRITE_SUCCESS', 'Tag created successfully. Please remove tag to proceed.'))
