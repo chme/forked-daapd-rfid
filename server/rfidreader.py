@@ -84,13 +84,14 @@ class RfidReader:
             log.debug('[rfid] Write task started')
             if self.current_task:
                 log.debug('[rfid] Cancel current rfid task')
-                self.current_task.cancel()
+                #self.current_task.cancel()
+                self.reader.cancel_wait()
                 await asyncio.wait([self.current_task])
                 log.debug('[rfid] Current rfid task completed. Coninue writing tag')
 
             log.info('[rfid] Waiting for tag to write new content={0}'.format(new_content))
             self.current_task = self.loop.run_in_executor(None, self.reader.write_text(new_content))
-            status, uid, __ = await self.current_task
+            status, uid, old_data = await self.current_task
 
             if status == mfrc522.StatusCode.STATUS_CANCELED:
                 log.debug('[rfid] Wating for tag write was canceled. Quit read task')
