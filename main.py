@@ -44,7 +44,8 @@ def init_log(log_path):
             'aiohttp.internal': { 'level': 'DEBUG', 'handlers': ['console', 'file'] },
             'aiohttp.server': { 'level': 'DEBUG', 'handlers': ['console', 'file'] },
             'aiohttp.web': { 'level': 'DEBUG', 'handlers': ['console', 'file'] },
-            'aiohttp.websocket': { 'level': 'DEBUG', 'handlers': ['console', 'file'] }
+            'aiohttp.websocket': { 'level': 'DEBUG', 'handlers': ['console', 'file'] },
+            'mfrc522.log': { 'level': 'DEBUG', 'handlers': ['console', 'file'] }
         },
         'disable_existing_loggers': True
     })
