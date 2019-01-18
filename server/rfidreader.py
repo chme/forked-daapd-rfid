@@ -14,6 +14,7 @@ class Timer:
 
     async def _job(self):
         await asyncio.sleep(self._timeout)
+        log.debug('[rfid] Timout reached')
         await self._callback()
 
     def cancel(self):
