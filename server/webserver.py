@@ -38,10 +38,10 @@ class WebSocket:
         self.websockets = []
 
     async def send_current_tag(self, uid, content):
-        await self.send({ 'type': 'current_tag', 'current_tag': { 'id': id, 'content': content } })
+        await self.send({ 'type': 'current_tag', 'current_tag': { 'id': uid, 'content': content } })
 
     async def send_message(self, uid, text):
-        await self.send({ 'type': 'message', 'message': { 'id': id, 'text': text } })
+        await self.send({ 'type': 'message', 'message': { 'id': uid, 'text': text } })
 
     async def send(self, message):
         log.debug('[ws] Send message={0}'.format(message))
