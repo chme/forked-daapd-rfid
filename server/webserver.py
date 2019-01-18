@@ -2,6 +2,7 @@
 from aiohttp import web, WSMsgType
 import asyncio
 import logging
+import os
 
 log = logging.getLogger('main')
 
@@ -50,7 +51,7 @@ class WebSocket:
 
 class WebServer:
 
-    def __init__(self, loop, web_socket, rfid, host, port, daapd_host, daapd_port):
+    def __init__(self, loop, web_socket, rfid, htdocs, host, port, daapd_host, daapd_port):
         self.loop = loop
         self.web_socket = web_socket
         self.rfid_reader = rfid
@@ -60,6 +61,7 @@ class WebServer:
         self.daapd_host = daapd_host
         self.daapd_port = daapd_port
 
+        self.htdocs = htdocs
         self.app = web.Application(loop=loop)
         self.app.add_routes([
                         web.get('/', self.index),
@@ -69,7 +71,7 @@ class WebServer:
                         web.get('/ws', self.web_socket.websocket)])
         self.app.router.add_static(
                         '/static/',
-                        path='htdocs/static',
+                        path=htdocs + '/static',
                         name='static')
 
         self.websockets = []
@@ -90,7 +92,7 @@ class WebServer:
         log.debug('[web] Webserver cleanup complete')
 
     async def index(self, request):
-        return web.FileResponse('htdocs/index.html')
+        return web.FileResponse(self.htdocs + '/index.html')
 
     async def api_conf(self, request):
         data = { 'daapd_host': self.daapd_host, 'daapd_port': self.daapd_port }

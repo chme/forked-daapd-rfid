@@ -11,7 +11,7 @@ from server import webserver, rfidreader, forked_daapd
 
 DEFAULT_CONF_PATH = './musicboxd.conf'
 DEFAULT_LOG_PATH  = './musicboxd.log'
-
+DEFAULT_HTDOCS_PATH = './htdocs'
 
 def init_log(log_path):
     logging.config.dictConfig({
@@ -56,6 +56,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="")
     parser.add_argument('-c', '--conf', default=DEFAULT_CONF_PATH, help="Path to the config file")
     parser.add_argument('-l', '--log', default=DEFAULT_LOG_PATH, help="Path to the log file")
+    parser.add_argument('-w', '--webroot', default=DEFAULT_HTDOCS_PATH, help="Path to the web root folder (htdocs)")
     return parser.parse_args()
 
 def main():
@@ -87,6 +88,7 @@ def main():
         web_server = webserver.WebServer(loop,
                                          web_socket,
                                          rfid_reader,
+                                         args.webroot,
                                          conf.get('server', 'host'),
                                          conf.get('server', 'port'),
                                          conf.get('forked-daapd', 'host'),
