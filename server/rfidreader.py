@@ -90,7 +90,7 @@ class RfidReader:
                 log.debug('[rfid] Current rfid task completed. Coninue writing tag')
 
             log.info('[rfid] Waiting for tag to write new content={0}'.format(new_content))
-            self.current_task = self.loop.run_in_executor(None, self.reader.write_text(new_content))
+            self.current_task = self.loop.run_in_executor(None, self.reader.write_text, new_content)
             status, uid, old_data = await self.current_task
 
             if status == mfrc522.StatusCode.STATUS_CANCELED:
