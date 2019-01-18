@@ -19,12 +19,16 @@ class RfidReader:
         self.current_task = None
 
     def start(self):
+        log.debug('[rfid] Starting RFID reader ...')
         self.reader.init()
         log.debug('[rfid] Reschedule read task')
         asyncio.ensure_future(self.read_tags(), loop=self.loop)
+        log.debug('[rfid] Starting RFID reader complete')
 
     def cleanup(self):
+        log.debug('[rfid] RFID reader cleanup ...')
         self.reader.cleanup()
+        log.debug('[rfid] RFID reader cleanup complete')
 
     def __reset_current_tag(self):
         self.current_tag_id = None
