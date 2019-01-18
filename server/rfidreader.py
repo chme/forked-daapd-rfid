@@ -1,5 +1,6 @@
 
 from MFRC522 import simple_mfrc522
+from MFRC522 import mfrc522
 import asyncio
 import logging
 
@@ -44,6 +45,11 @@ class RfidReader:
             self.current_task = self.loop.run_in_executor(None, self.reader.read_text)
             status, uid, text = await self.current_task
 
+            if status == mfrc522.StatusCode.STATUS_CANCELED:
+                log.debug('[rfid] Wating for tag read was canceled. Quit read task')
+                self.__reset_current_tag()
+                return
+            
             if status:
                 self.current_tag_id = uid.to_num()
                 self.current_tag_content = text
@@ -86,6 +92,12 @@ class RfidReader:
             self.current_task = self.loop.run_in_executor(None, self.reader.write_text(new_content))
             status, uid, __ = await self.current_task
 
+            if status == mfrc522.StatusCode.STATUS_CANCELED:
+                log.debug('[rfid] Wating for tag write was canceled. Quit read task')
+                log.warning('[rfid] Reschedule read task after write task was canceled')
+                asyncio.ensure_future(self.read_tags(), loop=self.loop)
+                return
+            
             if status:
                 asyncio.ensure_future(self.web_socket.send_message('WRITE_SUCCESS', 'Tag created successfully. Please remove tag to proceed.'))
 
