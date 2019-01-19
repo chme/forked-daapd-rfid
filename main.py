@@ -6,7 +6,7 @@ import logging
 import logging.config
 import sys
 
-from server import webserver, rfidreader, forked_daapd
+from server import webserver, rfidreader, forked_daapd, buttons
 
 
 DEFAULT_CONF_PATH = './musicboxd.conf'
@@ -84,6 +84,8 @@ def main():
                                             daapd,
                                             web_socket)
         rfid_reader.start()
+        btn = buttons.Buttons()
+        btn.start()
 
         web_server = webserver.WebServer(loop,
                                          web_socket,

@@ -63,3 +63,14 @@ class ForkedDaapd:
         log.debug('[daapd] Pause playback')
         async with self.client.put('{0}/api/player/pause'.format(self.url)) as resp:
             log.info('[daapd] Pause request status={0}'.format(resp.status))
+
+    async def next(self):
+        log.debug('[daapd] Play next track')
+        async with self.client.put('{0}/api/player/next'.format(self.url)) as resp:
+            log.info('[daapd] Play next request status={0}'.format(resp.status))
+
+    async def previous(self):
+        log.debug('[daapd] Play previous track')
+        async with self.client.put('{0}/api/player/prev'.format(self.url)) as resp:
+            log.info('[daapd] Play previous request status={0}'.format(resp.status))
+
