@@ -84,7 +84,7 @@ def main():
                                             daapd,
                                             web_socket)
         rfid_reader.start()
-        btn = buttons.Buttons()
+        btn = buttons.Buttons(loop, daapd)
         btn.start()
 
         web_server = webserver.WebServer(loop,

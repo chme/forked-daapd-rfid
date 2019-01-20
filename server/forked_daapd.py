@@ -71,6 +71,16 @@ class ForkedDaapd:
 
     async def previous(self):
         log.debug('[daapd] Play previous track')
-        async with self.client.put('{0}/api/player/prev'.format(self.url)) as resp:
+        async with self.client.put('{0}/api/player/previous'.format(self.url)) as resp:
             log.info('[daapd] Play previous request status={0}'.format(resp.status))
+
+    async def volume_up(self, vol_up):
+        log.debug('[daapd] Volume up (+{})'.format(vol_up))
+        async with self.client.put('{0}/api/player/volume?volume=30'.format(self.url)) as resp:
+            log.info('[daapd] Volume up request status={0}'.format(resp.status))
+
+    async def volume_down(self, vol_down):
+        log.debug('[daapd] Volume down (-{})'.format(vol_down))
+        async with self.client.put('{0}/api/player/volume?volume=10'.format(self.url)) as resp:
+            log.info('[daapd] Volume down request status={0}'.format(resp.status))
 
