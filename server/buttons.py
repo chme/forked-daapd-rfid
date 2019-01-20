@@ -35,7 +35,8 @@ class Buttons(object):
             cycles_pressed += 1
             if cycles_pressed > 3:
                 print('^^^ Volume up ({})'.format(cycles_pressed))
-                asyncio.run_coroutine_threadsafe(self.daapd.volume_up(5), self.loop)
+                future = asyncio.run_coroutine_threadsafe(self.daapd.volume_up(5), self.loop)
+                print(future.result())
             button_pressed = GPIO.input(26) == GPIO.LOW
         if cycles_pressed <= 3:
             print('>>> Next track ({})'.format(cycles_pressed))
@@ -58,7 +59,8 @@ class Buttons(object):
             cycles_pressed += 1
             if cycles_pressed > 3:
                 print('___ Volume down ({})'.format(cycles_pressed))
-                asyncio.run_coroutine_threadsafe(self.daapd.volume_down(5), self.loop)
+                future = asyncio.run_coroutine_threadsafe(self.daapd.volume_down(5), self.loop)
+                print(future.result())
             button_pressed = GPIO.input(16) == GPIO.LOW
         if cycles_pressed <= 3:
             print('<<< Previous track ({})'.format(cycles_pressed))

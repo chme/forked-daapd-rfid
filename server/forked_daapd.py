@@ -55,32 +55,32 @@ class ForkedDaapd:
         log.error('[daapd] Notify loop closed')
 
     async def play(self, uri):
-        log.debug('[daapd] Start playback for uri={0}'.format(uri))
-        async with self.client.post('{0}/api/queue/items/add?uris={1}&clear=true&shuffle=false&playback=start'.format(self.url, uri)) as resp:
-            log.info('[daapd] Play request status={0}'.format(resp.status))
+        log.debug('[daapd] Start playback for uri={}'.format(uri))
+        async with self.client.post('{}/api/queue/items/add?uris={}&clear=true&shuffle=false&playback=start'.format(self.url, uri)) as resp:
+            log.info('[daapd] Play request status={}'.format(resp.status))
 
     async def pause(self):
         log.debug('[daapd] Pause playback')
-        async with self.client.put('{0}/api/player/pause'.format(self.url)) as resp:
-            log.info('[daapd] Pause request status={0}'.format(resp.status))
+        async with self.client.put('{}/api/player/pause'.format(self.url)) as resp:
+            log.info('[daapd] Pause request status={}'.format(resp.status))
 
     async def next(self):
         log.debug('[daapd] Play next track')
-        async with self.client.put('{0}/api/player/next'.format(self.url)) as resp:
-            log.info('[daapd] Play next request status={0}'.format(resp.status))
+        async with self.client.put('{}/api/player/next'.format(self.url)) as resp:
+            log.info('[daapd] Play next request status={}'.format(resp.status))
 
     async def previous(self):
         log.debug('[daapd] Play previous track')
-        async with self.client.put('{0}/api/player/previous'.format(self.url)) as resp:
-            log.info('[daapd] Play previous request status={0}'.format(resp.status))
+        async with self.client.put('{}/api/player/previous'.format(self.url)) as resp:
+            log.info('[daapd] Play previous request status={}'.format(resp.status))
 
     async def volume_up(self, vol_up):
         log.debug('[daapd] Volume up (+{})'.format(vol_up))
-        async with self.client.put('{0}/api/player/volume?volume=30'.format(self.url)) as resp:
-            log.info('[daapd] Volume up request status={0}'.format(resp.status))
+        async with self.client.put('{}/api/player/volume?step={}'.format(self.url, vol_up)) as resp:
+            log.info('[daapd] Volume up request status={}'.format(resp.status))
 
     async def volume_down(self, vol_down):
         log.debug('[daapd] Volume down (-{})'.format(vol_down))
-        async with self.client.put('{0}/api/player/volume?volume=10'.format(self.url)) as resp:
-            log.info('[daapd] Volume down request status={0}'.format(resp.status))
+        async with self.client.put('{}/api/player/volume?step=-{}'.format(self.url, vol_down)) as resp:
+            log.info('[daapd] Volume down request status={}'.format(resp.status))
 
