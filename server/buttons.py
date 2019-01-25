@@ -5,26 +5,102 @@ from time import sleep, time
 import board
 import neopixel
 
+
 log = logging.getLogger('main')
+
+
+class LongPressButton(object):
+    
+    def __init__(self, pin, name=None, bouncetime=0.0, on_pressed_cb=None, on_released_cb=None, short_press_cb=None, short_press_time=1.0, long_press_cb=None, long_press_cb_trigger_time=0.5):
+        self.pin = pin
+        self.bouncetime = bouncetime
+        self.on_pressed_cb = on_pressed_cb
+        self.on_released_cb = on_released_cb
+        self.short_press_cb = short_press_cb
+        self.short_press_time = short_press_time
+        self.long_press_cb = long_press_cb
+        self.long_press_cb_trigger_time = long_press_cb_trigger_time
+        self.name = name if name else 'GPIO{}'.format(pin)
+        
+        self.last_event_time = 0
+        GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.add_event_detect(pin, GPIO.FALLING, callback=self.__on_event_detect)
+    
+    def __on_event_detect(self, __):
+        if time() - self.last_event_time < self.bouncetime:
+            log.debug('[buttons] Ignoring button press on {} (bouncetime)'.format(self.name))
+            return
+        
+        log.debug('[buttons] Button press on {}'.format(self.name))
+        self.last_event_time = time()
+        if self.on_pressed_cb:
+            self.on_pressed_cb(self.pin)
+        
+        long_press_time = self.last_event_time + self.short_press_time
+        button_pressed = True
+        is_short_press = True
+        
+        while button_pressed:
+            sleep(0.1)
+            self.last_event_time = time()
+            is_short_press = is_short_press and self.last_event_time < long_press_time
+            
+            if self.long_press_cb and not is_short_press and self.last_event_time > long_press_time:
+                self.long_press_cb(self.pin)
+            
+            long_press_time = self.last_event_time + self.long_press_cb_trigger_time
+            button_pressed = GPIO.input(self.pin) == GPIO.LOW
+        
+        self.last_event_time = time()
+        if is_short_press and self.short_press_cb:
+            self.short_press_cb(self.pin)
+        if self.on_released_cb:
+            self.on_released_cb(self.pin)
+        log.debug('[buttons] Button released on {}'.format(self.name))
 
 class Buttons(object):
     
-    def __init__(self, loop, daapd):
+    def __init__(self, loop, daapd, button_next_pin=26, button_prev_pin=16):
         self.loop = loop
         self.daapd = daapd
-        self.last_next_event = 0
-        self.last_prev_event = 0
+        self.button_next_pin = button_next_pin
+        self.button_prev_pin = button_prev_pin
+
+        GPIO.setmode(GPIO.BCM)
+        self.button_next = LongPressButton(self.button_next_pin,
+                                           on_pressed_cb=self.__on_pressed, 
+                                           on_released_cb=self.__on_released, 
+                                           short_press_cb=self.play_next, 
+                                           long_press_cb=self.volume_up)
+        self.button_prev = LongPressButton(self.button_prev_pin,
+                                           on_pressed_cb=self.__on_pressed, 
+                                           on_released_cb=self.__on_released, 
+                                           short_press_cb=self.play_prev, 
+                                           long_press_cb=self.volume_down)
+        
         self.pixels = neopixel.NeoPixel(board.D12, 2, brightness=0.1, auto_write=False)
     
     def start(self):
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_UP)     # yellow
-        GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_UP)     # blue
-        GPIO.add_event_detect(26, GPIO.FALLING, callback=self.play_next, bouncetime=500)
-        GPIO.add_event_detect(16, GPIO.FALLING, callback=self.play_prev, bouncetime=500)
-        
-        self.rainbow_cycle(0.01) # rainbow cycle with 10ms delay per step
+        log.debug('[buttons] Starting buttons controller ...')
+        self.rainbow_cycle(0.001) # rainbow cycle with 1ms delay per step
+        log.debug('[buttons] Starting buttons controller complete')
 
+    def __on_pressed(self, pin):
+        self.pixels.brightness = 0.1
+        self.pixels.fill((0,0,0))
+        
+        if pin == self.button_next_pin:
+            self.pixels[1] = (51, 204, 255)
+        elif pin == self.button_prev_pin:
+            self.pixels[0] = (255, 255, 0)
+        
+        self.pixels.show()
+    
+    def __on_released(self, __):
+        self.pixels.brightness = 0.1
+        self.pixels.fill((255,255,255))
+        self.pixels.show()
+    
     def rainbow_cycle(self, wait):
         for j in range(255):
             for i in range(2):
@@ -32,8 +108,7 @@ class Buttons(object):
                 self.pixels[i] = self.wheel(pixel_index & 255)
             self.pixels.show()
             sleep(wait)
-        sleep(2)
-        self.pixels.brightness = 0.2
+        self.pixels.brightness = 0.1
         self.pixels.fill((255,255,255))
         self.pixels.show()
 
@@ -58,65 +133,18 @@ class Buttons(object):
             b = int(255 - pos*3)
         return (r, g, b)
 
-    def play_next(self, pin):
-        log.debug('Button pressed on GPIO{}'.format(pin))
-        if time() - self.last_next_event < 0.5:
-            return
-
-        self.pixels.brightness = 0.6
-        self.pixels[0] = (0, 0, 0)
-        self.pixels[1] = (51, 204, 255)
-        self.pixels.show()
-        button_pressed = True
-        cycles_pressed = 0
-        while button_pressed:
-            sleep(0.5)
-            self.last_next_event = time()
-            cycles_pressed += 1
-            if cycles_pressed > 3:
-                log.debug('^^^ Volume up ({})'.format(cycles_pressed))
-                future = asyncio.run_coroutine_threadsafe(self.daapd.volume_up(5), self.loop)
-                log.debug('    result={}'.format(future.result()))
-            button_pressed = GPIO.input(26) == GPIO.LOW
-        if cycles_pressed <= 3:
-            log.debug('>>> Next track ({})'.format(cycles_pressed))
-            future = asyncio.run_coroutine_threadsafe(self.daapd.next(), self.loop)
-            log.debug('    result={}'.format(future.result()))
-        self.last_next_event = time()
-        log.debug('<<< GPIO{}'.format(pin))
-        self.pixels.brightness = 0.1
-        self.pixels.fill((255,255,255))
-        self.pixels.show()
+    def play_next(self, __):
+        log.debug('[buttons] Play next triggered')
+        asyncio.run_coroutine_threadsafe(self.daapd.next(), self.loop)
     
-    def play_prev(self, pin):
-        log.debug('Button pressed on GPIO{}'.format(pin))
-        if time() - self.last_prev_event < 0.5:
-            return
-
-        self.pixels.brightness = 0.6
-        self.pixels[0] = (255, 255, 0)
-        self.pixels[1] = (0, 0, 0)
-        self.pixels.show()
-        button_pressed = True
-        cycles_pressed = 0
-        while button_pressed:
-            sleep(0.5)
-            self.last_prev_event = time()
-            cycles_pressed += 1
-            if cycles_pressed > 3:
-                log.debug('___ Volume down ({})'.format(cycles_pressed))
-                future = asyncio.run_coroutine_threadsafe(self.daapd.volume_down(5), self.loop)
-                log.debug('    result={}'.format(future.result()))
-            button_pressed = GPIO.input(16) == GPIO.LOW
-        if cycles_pressed <= 3:
-            log.debug('<<< Previous track ({})'.format(cycles_pressed))
-            future = asyncio.run_coroutine_threadsafe(self.daapd.previous(), self.loop)
-            log.debug('    result={}'.format(future.result()))
-        self.last_prev_event = time()
-        log.debug('<<< GPIO{}'.format(pin))
-        self.pixels.brightness = 0.1
-        self.pixels.fill((255,255,255))
-        self.pixels.show()
+    def volume_up(self, __):
+        log.debug('[buttons] Volume up triggered')
+        asyncio.run_coroutine_threadsafe(self.daapd.volume_up(5), self.loop)
     
-    def toggle_playpause(self, pin):
-        log.debug('Button pressed on GPIO{}'.format(pin))
+    def play_prev(self, __):
+        log.debug('[buttons] Play previous triggered')
+        asyncio.run_coroutine_threadsafe(self.daapd.previous(), self.loop)
+    
+    def volume_down(self, __):
+        log.debug('[buttons] Volume down triggered')
+        asyncio.run_coroutine_threadsafe(self.daapd.volume_down(5), self.loop)
