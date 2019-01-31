@@ -22,8 +22,8 @@ class Pixels(object):
         self.loop = None
         self.pixels = neopixel.NeoPixel(board.D12, 2, brightness=0.1, auto_write=False)
     
-    async def start(self, loop):
-        self.loop = loop
+    async def start(self):
+        log.debug('Start pixels')
         self.rainbow_cycle(0.01) # rainbow cycle with 10ms delay per step
     
     def set_fill(self, color, brightness=0.1):
@@ -77,7 +77,11 @@ class Pixels(object):
 
 
 def neopixels(pixels):
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(pixels.start(loop))
+    print('Run neopixels')
+    loop = asyncio.new_event_loop()
+    pixels.loop = loop
+    print('init')
+    loop.run_until_complete(pixels.start())
+    print('run')
     loop.run_forever()
 
