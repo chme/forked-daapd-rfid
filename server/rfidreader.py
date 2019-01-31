@@ -1,6 +1,8 @@
 
-from MFRC522 import simple_mfrc522
-from MFRC522 import mfrc522
+from mfrc522 import (
+    SimpleMFRC522,
+    StatusCode
+)
 import asyncio
 import logging
 
@@ -26,7 +28,7 @@ class RfidReader:
         self.loop = loop
         self.daapd = daapd
         self.web_socket = web_socket
-        self.reader = simple_mfrc522.SimpleMFRC522()
+        self.reader = SimpleMFRC522()
 
         self.current_tag_id = None
         self.current_tag_content = None
@@ -60,7 +62,7 @@ class RfidReader:
             self.current_task = self.loop.run_in_executor(None, self.reader.read_text)
             status, uid, text = await self.current_task
 
-            if status == mfrc522.StatusCode.STATUS_CANCELED:
+            if status == StatusCode.STATUS_CANCELED:
                 log.debug('[rfid] Wating for tag read was canceled. Quit read task')
                 self.__reset_current_tag()
                 return
@@ -109,7 +111,7 @@ class RfidReader:
             self.current_task = self.loop.run_in_executor(None, self.reader.write_text, new_content)
             status, uid, __ = await self.current_task
 
-            if status == mfrc522.StatusCode.STATUS_CANCELED:
+            if status == StatusCode.STATUS_CANCELED:
                 log.debug('[rfid] Wating for tag write was canceled. Quit read task')
                 log.warning('[rfid] Reschedule read task after write task was canceled')
                 asyncio.ensure_future(self.read_tags(), loop=self.loop)
