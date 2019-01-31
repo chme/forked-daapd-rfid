@@ -2,8 +2,7 @@ import asyncio
 import logging
 import RPi.GPIO as GPIO
 from time import sleep, time
-import board
-import neopixel
+from .pixels import PixelColors
 
 
 log = logging.getLogger('main')
@@ -60,9 +59,10 @@ class LongPressButton(object):
 
 class Buttons(object):
     
-    def __init__(self, loop, daapd, button_next_pin=26, button_prev_pin=16):
+    def __init__(self, loop, daapd, neo_pixels, button_next_pin=26, button_prev_pin=16):
         self.loop = loop
         self.daapd = daapd
+        self.neo_pixels = neo_pixels
         self.button_next_pin = button_next_pin
         self.button_prev_pin = button_prev_pin
 
@@ -78,64 +78,23 @@ class Buttons(object):
                                            short_press_cb=self.play_prev, 
                                            long_press_cb=self.volume_down)
         
-        self.pixels = neopixel.NeoPixel(board.D12, 2, brightness=0.1, auto_write=False)
     
     def start(self):
         log.debug('[buttons] Starting buttons controller ...')
-        self.rainbow_cycle(0.001) # rainbow cycle with 1ms delay per step
         log.debug('[buttons] Starting buttons controller complete')
     
     def cleanup(self):
         GPIO.cleanup([self.button_next_pin, self.button_prev])
 
     def __on_pressed(self, pin):
-        self.pixels.brightness = 0.1
-        self.pixels.fill((0,0,0))
-        
         if pin == self.button_next_pin:
-            self.pixels[1] = (51, 204, 255)
+            self.neo_pixels.set_colors(PixelColors.BLUE, PixelColors.BLACK)
         elif pin == self.button_prev_pin:
-            self.pixels[0] = (255, 255, 0)
-        
-        self.pixels.show()
+            self.neo_pixels.set_colors(PixelColors.BLACK, PixelColors.YELLOW)
     
     def __on_released(self, __):
-        self.pixels.brightness = 0.1
-        self.pixels.fill((255,255,255))
-        self.pixels.show()
+        self.neo_pixels.set_fill(PixelColors.WHITE)
     
-    def rainbow_cycle(self, wait):
-        for j in range(255):
-            for i in range(2):
-                pixel_index = (i * 256 // 2) + j
-                self.pixels[i] = self.wheel(pixel_index & 255)
-            self.pixels.show()
-            sleep(wait)
-        self.pixels.brightness = 0.1
-        self.pixels.fill((255,255,255))
-        self.pixels.show()
-
-    def wheel(self, pos):
-        # Input a value 0 to 255 to get a color value.
-        # The colours are a transition r - g - b - back to r.
-        if pos < 0 or pos > 255:
-            r = g = b = 0
-        elif pos < 85:
-            r = int(pos * 3)
-            g = int(255 - pos*3)
-            b = 0
-        elif pos < 170:
-            pos -= 85
-            r = int(255 - pos*3)
-            g = 0
-            b = int(pos*3)
-        else:
-            pos -= 170
-            r = 0
-            g = int(pos*3)
-            b = int(255 - pos*3)
-        return (r, g, b)
-
     def play_next(self, __):
         log.debug('[buttons] Play next triggered')
         asyncio.run_coroutine_threadsafe(self.daapd.next(), self.loop)

@@ -5,8 +5,9 @@ import configparser
 import logging
 import logging.config
 import sys
+import threading
 
-from server import webserver, rfidreader, forked_daapd, buttons
+from server import webserver, rfidreader, forked_daapd, buttons, pixels
 
 
 DEFAULT_CONF_PATH = './musicboxd.conf'
@@ -72,6 +73,9 @@ def main():
     loop = asyncio.get_event_loop()
 
     try:
+        neo_pixels = pixels.Pixels()
+        threading.Thread(target=pixels.neopixels, args=(neo_pixels,))
+        
         web_socket = webserver.WebSocket()
 
         daapd = forked_daapd.ForkedDaapd(loop,
@@ -82,9 +86,10 @@ def main():
 
         rfid_reader = rfidreader.RfidReader(loop,
                                             daapd,
-                                            web_socket)
+                                            web_socket,
+                                            neo_pixels)
         rfid_reader.start()
-        btn = buttons.Buttons(loop, daapd)
+        btn = buttons.Buttons(loop, daapd, neo_pixels)
         btn.start()
 
         web_server = webserver.WebServer(loop,

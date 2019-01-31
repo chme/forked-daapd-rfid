@@ -24,10 +24,11 @@ class Timer:
 
 class RfidReader:
 
-    def __init__(self, loop, daapd, web_socket):
+    def __init__(self, loop, daapd, web_socket, neo_pixels):
         self.loop = loop
         self.daapd = daapd
         self.web_socket = web_socket
+        self.neo_pixels = neo_pixels
         self.reader = SimpleMFRC522()
 
         self.current_tag_id = None
