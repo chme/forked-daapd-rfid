@@ -45,10 +45,10 @@ class LongPressButton(object):
             self.last_event_time = time()
             is_short_press = is_short_press and self.last_event_time < long_press_time
             
+            # log.debug('[buttons]     Longpress detection: is_short {}, last_event {}, long_press {}'.format(is_short_press, self.last_event_time, long_press_time))
             if self.long_press_cb and not is_short_press and self.last_event_time > long_press_time:
                 self.long_press_cb(self.pin)
-            
-            long_press_time = self.last_event_time + self.long_press_cb_trigger_time
+                long_press_time = self.last_event_time + self.long_press_cb_trigger_time
             button_pressed = GPIO.input(self.pin) == GPIO.LOW
         
         self.last_event_time = time()
