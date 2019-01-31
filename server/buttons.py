@@ -84,6 +84,9 @@ class Buttons(object):
         log.debug('[buttons] Starting buttons controller ...')
         self.rainbow_cycle(0.001) # rainbow cycle with 1ms delay per step
         log.debug('[buttons] Starting buttons controller complete')
+    
+    def cleanup(self):
+        GPIO.cleanup([self.button_next_pin, self.button_prev])
 
     def __on_pressed(self, pin):
         self.pixels.brightness = 0.1

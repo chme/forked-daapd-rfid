@@ -105,6 +105,7 @@ def main():
     finally:
         web_server.cleanup()
         rfid_reader.cleanup()
+        btn.cleanup()
         tasks = asyncio.gather(
                     *asyncio.Task.all_tasks(loop=loop),
                     loop=loop,
