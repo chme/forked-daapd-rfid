@@ -11,7 +11,7 @@ log = logging.getLogger('main')
 
 class LongPressButton(object):
     
-    def __init__(self, pin, name=None, bouncetime=0.0, on_pressed_cb=None, on_released_cb=None, short_press_cb=None, short_press_time=1.0, long_press_cb=None, long_press_cb_trigger_time=0.5):
+    def __init__(self, pin, name=None, bouncetime=1.0, on_pressed_cb=None, on_released_cb=None, short_press_cb=None, short_press_time=1.0, long_press_cb=None, long_press_cb_trigger_time=0.5):
         self.pin = pin
         self.bouncetime = bouncetime
         self.on_pressed_cb = on_pressed_cb
