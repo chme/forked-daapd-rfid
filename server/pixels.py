@@ -86,15 +86,16 @@ class Pixels(object):
             g = int(i / 256 * color.green)
             b = int(i / 256 * color.blue)
             self._set_fill(PixelColor(r, g, b))
-            await asyncio.sleep(0.001)
+            await asyncio.sleep(0.002)
         
+        await asyncio.sleep(0.2)
         # log.debug('>> pulse >> fade in')
         for i in range(256):            # Fade in
             r = int(i / 256 * color.red)
             g = int(i / 256 * color.green)
             b = int(i / 256 * color.blue)
             self._set_fill(PixelColor(r, g, b))
-            await asyncio.sleep(0.001)
+            await asyncio.sleep(0.002)
 
         # log.debug('>> pulse >> END')
     
@@ -102,7 +103,7 @@ class Pixels(object):
         # log.debug('>> pulse loop')
         while True:
             await self._pulse_color(color)
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(3)
     
     async def _rainbow_cycle(self, wait):
         log.debug('>> rainbow')
