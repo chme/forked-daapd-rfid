@@ -6,6 +6,8 @@ from mfrc522 import (
 import asyncio
 import logging
 
+from .pixels import WHITE, YELLOW, RED
+
 log = logging.getLogger('main')
 
 class Timer:
@@ -60,12 +62,14 @@ class RfidReader:
     async def read_tags(self):
         try:
             log.debug('[rfid] Read task started. Wating for new tag to start playback')
+            self.neo_pixels.pulse_color_loop(WHITE)
             self.current_task = self.loop.run_in_executor(None, self.reader.read_text)
             status, uid, text = await self.current_task
 
             if status == StatusCode.STATUS_CANCELED:
                 log.debug('[rfid] Wating for tag read was canceled. Quit read task')
                 self.__reset_current_tag()
+                self.neo_pixels.set_fill(YELLOW)
                 return
             
             if status:
@@ -88,8 +92,10 @@ class RfidReader:
                 await self.daapd.pause()
             else:
                 self.__reset_current_tag()
+                self.neo_pixels.set_fill(RED)
                 log.error('[rfid] Error reading tag (status: {})'.format(status))
 
+            await asyncio.sleep(1)
             log.debug('[rfid] Reschedule read task')
             asyncio.ensure_future(self.read_tags(), loop=self.loop)
 

@@ -1,8 +1,6 @@
 
 import asyncio
 import logging
-from time import sleep
-from enum import Enum
 
 import board
 import neopixel
@@ -10,54 +8,101 @@ import neopixel
 
 log = logging.getLogger('main')
 
-class PixelColors(Enum):
-    BLACK = (0, 0, 0)
-    WHITE = (255, 255, 255)
-    YELLOW = (51, 204, 255)
-    BLUE = (255, 255, 0)
+class PixelColor(object):
+    
+    def __init__(self, red, green, blue):
+        self.red   = red
+        self.green = green
+        self.blue  = blue
+        
+BLACK   = PixelColor(  0,   0,   0)
+WHITE   = PixelColor(255, 255, 255)
+RED     = PixelColor(255,   0,   0)
+GREEN   = PixelColor(  0, 255,   0)
+BLUE    = PixelColor(  0,   0, 255)
+YELLOW  = PixelColor(255, 255,   0)
 
 class Pixels(object):
 
     def __init__(self):
         self.loop = None
+        self.current_task = None
         self.pixels = neopixel.NeoPixel(board.D12, 2, brightness=0.1, auto_write=False)
     
-    async def start(self):
+    def start(self):
         log.debug('Start pixels')
-        self.rainbow_cycle(0.01) # rainbow cycle with 10ms delay per step
+        asyncio.run_coroutine_threadsafe(self._rainbow_cycle(0.01), self.loop)  # rainbow cycle with 10ms delay per step
     
     def stop(self):
+        self.loop.call_soon_threadsafe(self._cancel_tasks)
         self.loop.call_soon_threadsafe(self.loop.stop)
 
     def set_fill(self, color, brightness=0.1):
-        asyncio.run_coroutine_threadsafe(self._set_fill(color, brightness=brightness), self.loop)
+        self.loop.call_soon_threadsafe(self._cancel_tasks)
+        self.loop.call_soon_threadsafe(self._set_fill, color, brightness=brightness)
+        # asyncio.run_coroutine_threadsafe(self._set_fill(color, brightness=brightness), self.loop)
     
     def set_colors(self, color1, color2, brightness=0.1):
-        asyncio.run_coroutine_threadsafe(self._set_colors(color1, color2, brightness=brightness), self.loop)
+        self.loop.call_soon_threadsafe(self._cancel_tasks)
+        self.loop.call_soon_threadsafe(self._set_fill, color1, color2, brightness=brightness)
+        # asyncio.run_coroutine_threadsafe(self._set_colors(color1, color2, brightness=brightness), self.loop)
+    
+    def pulse_color(self, color, brightness=0.1):
+        self.loop.call_soon_threadsafe(self._cancel_tasks)
+        asyncio.run_coroutine_threadsafe(self._pulse_color(color, brightness=brightness), self.loop)
 
-    async def _set_fill(self, color, brightness=0.1):
+    def pulse_color_loop(self, color, brightness=0.1):
+        self.loop.call_soon_threadsafe(self._cancel_tasks)
+        asyncio.run_coroutine_threadsafe(self._pulse_color_loop(color, brightness=brightness), self.loop)
+    
+    def _set_fill(self, color, brightness=0.1):
         self.pixels.brightness = brightness
-        self.pixels.fill(color.value)
+        self.pixels.fill((color.red, color.green, color.blue))
         self.pixels.show()
     
-    async def _set_colors(self, color1, color2, brightness=0.1):
+    def _set_colors(self, color1, color2, brightness=0.1):
         self.pixels.brightness = brightness
-        self.pixels[0] = color1.value
-        self.pixels[1] = color2.value
+        self.pixels[0] = (color1.red, color1.green, color1.blue)
+        self.pixels[1] = (color2.red, color2.green, color2.blue)
         self.pixels.show()
     
-    def rainbow_cycle(self, wait):
+    async def _pulse_color(self, color, brightness=0.1):
+        self._cancel_current_task()
+        
+        for i in range(255, -1, -1):     # Fade out
+            r = int(i / 256 * color.red)
+            g = int(i / 256 * color.green)
+            b = int(i / 256 * color.blue)
+            self._set_fill(PixelColor(r, g, b), brightness=brightness)
+            await asyncio.sleep(0.1)
+        
+        for i in range(256):            # Fade in
+            r = int(i / 256 * color.red)
+            g = int(i / 256 * color.green)
+            b = int(i / 256 * color.blue)
+            self._set_fill(PixelColor(r, g, b), brightness=brightness)
+            await asyncio.sleep(0.1)
+    
+    async def _pulse_color_loop(self, color, brightness=0.1):
+        while True:
+            await self._pulse_color(color, brightness=brightness)
+            await asyncio.sleep(0.2)
+    
+    async def _rainbow_cycle(self, wait):
+        self._cancel_current_task()
+        
         for j in range(255):
             for i in range(2):
                 pixel_index = (i * 256 // 2) + j
-                self.pixels[i] = self.wheel(pixel_index & 255)
+                self.pixels[i] = self._wheel(pixel_index & 255)
             self.pixels.show()
-            sleep(wait)
+            await asyncio.sleep(wait)
+        
         self.pixels.brightness = 0.1
         self.pixels.fill((255,255,255))
         self.pixels.show()
 
-    def wheel(self, pos):
+    def _wheel(self, pos):
         # Input a value 0 to 255 to get a color value.
         # The colours are a transition r - g - b - back to r.
         if pos < 0 or pos > 255:
@@ -78,13 +123,18 @@ class Pixels(object):
             b = int(255 - pos*3)
         return (r, g, b)
 
+    def _cancel_tasks(self):
+        tasks = asyncio.gather(
+                    *asyncio.Task.all_tasks(loop=self.loop),
+                    loop=self.loop,
+                    return_exceptions=True)
+        tasks.cancel()
 
 def neopixels(pixels):
-    print('Run neopixels')
+    log.debug('[pixels] Run neopixels')
     loop = asyncio.new_event_loop()
     pixels.loop = loop
-    print('init')
-    loop.run_until_complete(pixels.start())
-    print('run')
+    log.debug('[pixels] run forever')
     loop.run_forever()
+    log.debug('[pixels] stopped')
 

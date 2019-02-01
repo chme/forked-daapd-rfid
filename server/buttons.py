@@ -2,7 +2,7 @@ import asyncio
 import logging
 import RPi.GPIO as GPIO
 from time import sleep, time
-from .pixels import PixelColors
+from .pixels import YELLOW, BLUE, WHITE, BLACK
 
 
 log = logging.getLogger('main')
@@ -88,12 +88,12 @@ class Buttons(object):
 
     def __on_pressed(self, pin):
         if pin == self.button_next_pin:
-            self.neo_pixels.set_colors(PixelColors.BLUE, PixelColors.BLACK)
+            self.neo_pixels.set_colors(BLUE, BLACK)
         elif pin == self.button_prev_pin:
-            self.neo_pixels.set_colors(PixelColors.BLACK, PixelColors.YELLOW)
+            self.neo_pixels.set_colors(BLACK, YELLOW)
     
     def __on_released(self, __):
-        self.neo_pixels.set_fill(PixelColors.WHITE)
+        self.neo_pixels.set_fill(WHITE)
     
     def play_next(self, __):
         log.debug('[buttons] Play next triggered')
