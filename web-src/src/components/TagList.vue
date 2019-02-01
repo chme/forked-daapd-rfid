@@ -18,7 +18,7 @@
       <p class="title is-5">Current tag</p>
       <div class="columns is-multiline">
         <div class="column is-one-third">
-          <TagCard :tag="current_tag"/>
+          <TagCard :tag="current_tag" :album="album"/>
         </div>
       </div>
     </div>
@@ -29,6 +29,7 @@
 <script>
 import CreateTag from './CreateTag.vue'
 import TagCard from './TagCard.vue'
+import webapi from '@/forked-daapd-api'
 
 export default {
   name: 'TagList',
@@ -37,7 +38,8 @@ export default {
   },
   data: function () {
     return {
-      showCreateTag: false
+      showCreateTag: false,
+      album: {}
     }
   },
 
@@ -48,6 +50,21 @@ export default {
   },
 
   methods: {
+  },
+
+  watch: {
+    'current_tag' () {
+      if (webapi.is_album(this.current_tag.content)) {
+        var id = webapi.get_id_from_uri(this.current_tag.content)
+        webapi.load_album(id).then(({ data }) => {
+          this.album = data
+        }).catch(() => {
+          this.album = {}
+        })
+      } else {
+        this.album = {}
+      }
+    }
   }
 }
 </script>

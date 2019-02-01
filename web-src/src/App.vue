@@ -19,6 +19,9 @@ export default {
   created: function () {
     axios.get('/api/conf').then(({ data }) => {
       this.$store.commit('setConf', data)
+      var host = data.daapd_host === 'localhost' ? window.location.hostname : data.daapd_host
+      //var host = 'musicbox'
+      this.$store.commit('setForkedDaapdUrl', 'http://' + host + ':' + data.daapd_port)
     })
     axios.get('/api/tags/current').then(({ data }) => {
       this.$store.commit('setCurrentTag', data)

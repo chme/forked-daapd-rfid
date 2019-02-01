@@ -9,6 +9,7 @@ export default new Vuex.Store({
       'daapd_host': '',
       'daapd_port': 0
     },
+    forked_daapd_url: '',
     current_tag: {
       'id': 0,
       'content': ''
@@ -22,6 +23,9 @@ export default new Vuex.Store({
   mutations: {
     setConf (state, conf) {
       state.conf = conf
+    },
+    setForkedDaapdUrl(state, url) {
+      state.forked_daapd_url = url
     },
     setCurrentTag (state, tag) {
       state.current_tag = tag

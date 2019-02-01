@@ -19,7 +19,7 @@ module.exports = {
     // Proxy API calls to the server running on localhost:9090
     proxy: {
       '/': {
-        target: 'http://localhost:9090'
+        target: 'http://musicbox:9090'
       }
     }
   }

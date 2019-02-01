@@ -4,7 +4,6 @@
     <div class="modal-content">
       <div class="box" v-if="step === 'select'">
         <p class="title is-5">Select album</p>
-        <form v-on:submit.prevent="search">
           <div class="field">
             <p class="control is-expanded has-icons-left">
               <input class="input is-rounded is-shadowless" type="text" placeholder="Search" v-model="search_query" ref="search_field">
@@ -13,10 +12,8 @@
               </span>
             </p>
           </div>
-        </form>
         <hr>
-        <p class="content">Search results</p>
-        <article class="media" v-for="album in albums.items" :key="album.id">
+        <article class="media" v-for="album in filtered_list" :key="album.id" v-if="search_query === '' || album.name.indexOf(search_query) >= 0 || album.artist.indexOf(search_query)">
           <div class="media-content">
             <div class="media-content">
               <p class="title is-6">{{ album.name }}</p>
@@ -40,6 +37,7 @@
 
 <script>
 import axios from 'axios'
+import webapi from '@/forked-daapd-api'
 
 export default {
   name: 'CreateTag',
@@ -51,27 +49,29 @@ export default {
     }
   },
 
+  created: function () {
+    webapi.load_albums().then(({ data }) => {
+      this.albums = data
+    })
+  },
+
   computed: {
     message () {
       return this.$store.state.message
+    },
+
+    filtered_list () {
+      if (!this.search_query) {
+        return this.albums.items
+      }
+      return this.albums.items.filter(album => {
+        return album.name.toLowerCase().includes(this.search_query.toLowerCase())
+                || album.artist.toLowerCase().includes(this.search_query.toLowerCase())
+      })
     }
   },
 
   methods: {
-    search: function () {
-      if (this.search_query) {
-        var searchParams = {
-          'type': 'album',
-          'expression': 'artist includes "' + this.search_query + '" or album includes "' + this.search_query + '"'
-        }
-
-        var host = this.$store.state.conf.daapd_host === 'localhost' ? window.location.hostname : this.$store.state.conf.daapd_host
-        axios.get('http://' + host + ':' + this.$store.state.conf.daapd_port + '/api/search', { params: searchParams }).then(({ data }) => {
-          this.albums = data.albums ? data.albums : { items: [], total: 0 }
-        })
-      }
-    },
-
     createTag: function (content) {
       this.$store.commit('setMessage', { 'id': 'WRITE_TAG', 'text': 'Hold a Classic 1K MIFARE tag against the NFC reader Module (MFRC522) to create a new tag.' })
       this.step = 'write'
