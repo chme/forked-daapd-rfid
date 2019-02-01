@@ -74,7 +74,8 @@ def main():
 
     try:
         neo_pixels = pixels.Pixels()
-        threading.Thread(target=pixels.neopixels, args=(neo_pixels,))
+        pixel_thread = threading.Thread(target=pixels.neopixels, args=(neo_pixels,))
+        pixel_thread.start()
         
         web_socket = webserver.WebSocket()
 
@@ -117,6 +118,8 @@ def main():
                     return_exceptions=True)
         tasks.add_done_callback(lambda t: loop.stop())
         tasks.cancel()
+        neo_pixels.stop()
+        pixel_thread.join()
     if sys.version_info >= (3, 6):
         if hasattr(loop, 'shutdown_asyncgens'):
             loop.run_until_complete(loop.shutdown_asyncgens())

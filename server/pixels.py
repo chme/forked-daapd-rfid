@@ -26,6 +26,9 @@ class Pixels(object):
         log.debug('Start pixels')
         self.rainbow_cycle(0.01) # rainbow cycle with 10ms delay per step
     
+    def stop(self):
+        self.loop.call_soon_threadsafe(self.loop.stop)
+
     def set_fill(self, color, brightness=0.1):
         asyncio.run_coroutine_threadsafe(self._set_fill(color, brightness=brightness), self.loop)
     
