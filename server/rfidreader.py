@@ -80,6 +80,7 @@ class RfidReader:
                 await self.daapd.play(text)
     
                 log.debug('[rfid] Wating for tag removed to pause playback')
+                self.neo_pixels.set_fill(WHITE)
                 self.current_task = self.loop.run_in_executor(None, self.reader.wait_for_card_removed)
                 removed = await self.current_task
     

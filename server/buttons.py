@@ -68,14 +68,14 @@ class Buttons(object):
 
         GPIO.setmode(GPIO.BCM)
         self.button_next = LongPressButton(self.button_next_pin,
-                                           on_pressed_cb=self.__on_pressed, 
-                                           on_released_cb=self.__on_released, 
-                                           short_press_cb=self.play_next, 
+                                           on_pressed_cb=self.__on_pressed,
+                                           on_released_cb=self.__on_released,
+                                           short_press_cb=self.play_next,
                                            long_press_cb=self.volume_up)
         self.button_prev = LongPressButton(self.button_prev_pin,
-                                           on_pressed_cb=self.__on_pressed, 
-                                           on_released_cb=self.__on_released, 
-                                           short_press_cb=self.play_prev, 
+                                           on_pressed_cb=self.__on_pressed,
+                                           on_released_cb=self.__on_released,
+                                           short_press_cb=self.play_prev,
                                            long_press_cb=self.volume_down)
         
     
@@ -84,7 +84,7 @@ class Buttons(object):
         log.debug('[buttons] Starting buttons controller complete')
     
     def cleanup(self):
-        GPIO.cleanup([self.button_next_pin, self.button_prev])
+        GPIO.cleanup([self.button_next_pin, self.button_prev_pin])
 
     def __on_pressed(self, pin):
         if pin == self.button_next_pin:
@@ -101,6 +101,7 @@ class Buttons(object):
     
     def volume_up(self, __):
         log.debug('[buttons] Volume up triggered')
+        self.neo_pixels.set_fill(BLUE)
         asyncio.run_coroutine_threadsafe(self.daapd.volume_up(5), self.loop)
     
     def play_prev(self, __):
@@ -109,4 +110,5 @@ class Buttons(object):
     
     def volume_down(self, __):
         log.debug('[buttons] Volume down triggered')
+        self.neo_pixels.set_fill(YELLOW)
         asyncio.run_coroutine_threadsafe(self.daapd.volume_down(5), self.loop)

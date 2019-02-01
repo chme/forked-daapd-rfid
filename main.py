@@ -18,7 +18,7 @@ def init_log(log_path):
     logging.config.dictConfig({
         'version': 1,
         'formatters': {
-            'default': {'format': '%(asctime)s %(levelname)6s [%(name)s] %(message)s'}
+            'default': {'format': '%(asctime)s %(levelname)8s [%(name)s] %(message)s'}
         },
         'handlers': {
             'console': {
