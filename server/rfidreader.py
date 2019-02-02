@@ -69,7 +69,8 @@ class RfidReader:
             if status == StatusCode.STATUS_CANCELED:
                 log.debug('[rfid] Wating for tag read was canceled. Quit read task')
                 self.__reset_current_tag()
-                self.neo_pixels.set_state(Pixels.YELLOW, PixelType.FIXED)
+                self.neo_pixels.set_state(Pixels.YELLOW, PixelType.BLINK)
+                await asyncio.sleep(1)
                 return
             
             if status:
@@ -80,12 +81,14 @@ class RfidReader:
                 await self.daapd.play(text)
     
                 log.debug('[rfid] Wating for tag removed to pause playback')
-                self.neo_pixels.set_state(Pixels.CHARTREUSE, PixelType.FIXED)
+                self.neo_pixels.set_state(Pixels.AZURE, PixelType.FIXED)
                 self.current_task = self.loop.run_in_executor(None, self.reader.wait_for_card_removed)
                 removed = await self.current_task
     
                 if not removed:
                     log.debug('[rfid] Wating for tag removed was canceled. Quit read task')
+                    self.neo_pixels.set_state(Pixels.YELLOW, PixelType.BLINK)
+                    await asyncio.sleep(1)
                     return
                 
                 log.info('[rfid] Tag with id={0} and content={1} removed'.format(self.current_tag_id, self.current_tag_content))

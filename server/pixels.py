@@ -51,7 +51,7 @@ class Pixels(object):
     
     def start(self):
         log.debug('Start pixels')
-        asyncio.run_coroutine_threadsafe(self._rainbow_cycle(0.01), self.loop)  # rainbow cycle with 10ms delay per step
+        # asyncio.run_coroutine_threadsafe(self._rainbow_cycle(0.01), self.loop)  # rainbow cycle with 10ms delay per step
     
     def stop(self):
         log.debug('Stop pixels')
@@ -81,8 +81,8 @@ class Pixels(object):
     
     def set_colors(self, color1, color2, pixel_type, duration):
         self.loop.call_soon_threadsafe(self._cancel_tasks)
-        asyncio.ensure_future(self._set_colors(color1, color2, pixel_type, duration), loop=self.loop)
-    
+        asyncio.run_coroutine_threadsafe(self._set_colors(color1, color2, pixel_type, duration), self.loop)
+
     async def _set_colors(self, color1, color2, pixel_type, duration):
         if pixel_type == PixelType.PULSE:
             await self._pulse_colors(color1, color2)
@@ -91,8 +91,9 @@ class Pixels(object):
         else:
             self._update(color1, color2)
         
-        if duration >= 0:
+        if duration > 0:
             await asyncio.sleep(duration)
+        if duration >= 0:
             self._reset_state()
     
     def _update(self, color1, color2):
