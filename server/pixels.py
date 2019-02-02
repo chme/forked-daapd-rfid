@@ -1,7 +1,7 @@
 
 import asyncio
 import logging
-
+from enum import Enum
 import board
 import neopixel
 
@@ -19,19 +19,35 @@ class PixelColor(object):
         return 'PixelColor(r={},g={},b={}) '.format(self.red, self.green, self.blue)
 
 
-BLACK   = PixelColor(  0,   0,   0)
-WHITE   = PixelColor(255, 255, 255)
-RED     = PixelColor(255,   0,   0)
-GREEN   = PixelColor(  0, 255,   0)
-BLUE    = PixelColor(  0,   0, 255)
-YELLOW  = PixelColor(255, 255,   0)
+
+class PixelType(Enum):
+    FIXED = 1,
+    PULSE = 2,
+    BLINK = 3
 
 class Pixels(object):
+    BLACK         = PixelColor(  0,   0,   0)
+    GREY          = PixelColor(128, 128, 128)
+    WHITE         = PixelColor(255, 255, 255)
+    
+    RED           = PixelColor(255,   0,   0)
+    ROSE          = PixelColor(255,   0, 128)
+    MAGENTA       = PixelColor(255,   0, 255)
+    VIOLET        = PixelColor(128,   0, 255)
+    BLUE          = PixelColor(  0,   0, 255)
+    AZURE         = PixelColor(  0, 128, 255)
+    CYAN          = PixelColor(  0, 255, 255)
+    SPRING_GREEN  = PixelColor(  0, 255, 128)
+    GREEN         = PixelColor(  0, 255,   0)
+    CHARTREUSE    = PixelColor(128, 255,   0)
+    YELLOW        = PixelColor(255, 255,   0)
+    ORANGE        = PixelColor(255, 128,   0)
 
     def __init__(self):
-        self.loop = None
-        self.current_task = None
+        self.loop = None    # The loop gets assigned after instantiation (in the neopixels thread)
         self.pixels = neopixel.NeoPixel(board.D12, 2, brightness=0.1, auto_write=False)
+        self.pixel_type = PixelType.FIXED
+        self.pixel_color = Pixels.BLACK
     
     def start(self):
         log.debug('Start pixels')
@@ -42,104 +58,86 @@ class Pixels(object):
         self.loop.call_soon_threadsafe(self._cancel_tasks)
         self.loop.call_soon_threadsafe(self.loop.stop)
 
-    def set_fill(self, color):
-        log.debug('Set fill color')
-        self.loop.call_soon_threadsafe(self._cancel_tasks)
-        self.loop.call_soon_threadsafe(self._set_fill, color)
-        # asyncio.run_coroutine_threadsafe(self._set_fill(color, brightness=brightness), self.loop)
-    
-    def set_colors(self, color1, color2):
-        log.debug('Set colors')
-        self.loop.call_soon_threadsafe(self._cancel_tasks)
-        self.loop.call_soon_threadsafe(self._set_colors, color1, color2)
-        # asyncio.run_coroutine_threadsafe(self._set_colors(color1, color2, brightness=brightness), self.loop)
-    
-    def pulse_color(self, color):
-        log.debug('Pulse')
-        self.loop.call_soon_threadsafe(self._cancel_tasks)
-        asyncio.run_coroutine_threadsafe(self._pulse_color(color), self.loop)
-
-    def pulse_color_loop(self, color):
-        log.debug('Pulse loop')
-        self.loop.call_soon_threadsafe(self._cancel_tasks)
-        asyncio.run_coroutine_threadsafe(self._pulse_color_loop(color), self.loop)
-    
-    def _set_fill(self, color, brightness=0.1):
-        # log.debug('>> fill {}'.format(color))
+    def set_brightness(self, brightness):
         self.pixels.brightness = brightness
-        self.pixels.fill((color.red, color.green, color.blue))
-        self.pixels.show()
     
-    def _set_colors(self, color1, color2, brightness=0.1):
-        # log.debug('>> colors {}, {}'.format(color1,color2))
-        self.pixels.brightness = brightness
+    def set_state(self, color, pixel_type):
+        self.loop.call_soon_threadsafe(self._cancel_tasks)
+        self.loop.call_soon_threadsafe(self._set_state, color, pixel_type)
+    
+    def _set_state(self, color, pixel_type):
+        self.pixel_type = pixel_type
+        self.pixel_color = color
+        
+        if pixel_type == PixelType.PULSE:
+            asyncio.ensure_future(self._pulse_colors_loop(color, color), loop=self.loop)
+        elif pixel_type == PixelType.BLINK:
+            asyncio.ensure_future(self._blink_colors_loop(color, color), loop=self.loop)
+        else:
+            self._update(color, color)
+    
+    def _reset_state(self):
+        self._set_state(self.pixel_color, self.pixel_type)
+    
+    def set_colors(self, color1, color2, pixel_type, duration):
+        self.loop.call_soon_threadsafe(self._cancel_tasks)
+        asyncio.ensure_future(self._set_colors(color1, color2, pixel_type, duration), loop=self.loop)
+    
+    async def _set_colors(self, color1, color2, pixel_type, duration):
+        if pixel_type == PixelType.FIXED:
+            await self._blink_colors(color1, color2)
+        elif pixel_type == PixelType.PULSE:
+            await self._pulse_colors(color1, color2)
+        else:
+            self._update(color1, color2)
+        
+        await asyncio.sleep(duration)
+        if duration >= 0:
+            self._reset_state()
+    
+    def _update(self, color1, color2):
         self.pixels[0] = (color1.red, color1.green, color1.blue)
         self.pixels[1] = (color2.red, color2.green, color2.blue)
         self.pixels.show()
     
-    async def _pulse_color(self, color):
-        # log.debug('>> pulse')
-        
-        # log.debug('>> pulse >> fade out')
+    def _new_color(self, color, intensity):
+        r = int(intensity / 256 * color.red)
+        g = int(intensity / 256 * color.green)
+        b = int(intensity / 256 * color.blue)
+        return PixelColor(r, g, b)
+    
+    async def _pulse_colors(self, color1, color2):
         for i in range(255, -1, -1):     # Fade out
-            r = int(i / 256 * color.red)
-            g = int(i / 256 * color.green)
-            b = int(i / 256 * color.blue)
-            self._set_fill(PixelColor(r, g, b))
+            new_color1 = self._new_color(color1, i)
+            new_color2 = self._new_color(color2, i)
+            self._update(new_color1, new_color2)
             await asyncio.sleep(0.002)
         
         await asyncio.sleep(0.2)
-        # log.debug('>> pulse >> fade in')
+        
         for i in range(256):            # Fade in
-            r = int(i / 256 * color.red)
-            g = int(i / 256 * color.green)
-            b = int(i / 256 * color.blue)
-            self._set_fill(PixelColor(r, g, b))
+            new_color1 = self._new_color(color1, i)
+            new_color2 = self._new_color(color2, i)
+            self._update(new_color1, new_color2)
             await asyncio.sleep(0.002)
-
-        # log.debug('>> pulse >> END')
     
-    async def _pulse_color_loop(self, color):
-        # log.debug('>> pulse loop')
+    async def _pulse_colors_loop(self, color1, color2):
         while True:
-            await self._pulse_color(color)
-            await asyncio.sleep(3)
+            await self._pulse_colors(color1, color2)
+            await asyncio.sleep(3)      # Wait 3 seconds before starting the next pulse effect
     
-    async def _rainbow_cycle(self, wait):
-        log.debug('>> rainbow')
-        
-        for j in range(255):
-            for i in range(2):
-                pixel_index = (i * 256 // 2) + j
-                self.pixels[i] = self._wheel(pixel_index & 255)
-            self.pixels.show()
-            await asyncio.sleep(wait)
-        
-        self.pixels.brightness = 0.1
-        self.pixels.fill((255,255,255))
-        self.pixels.show()
-
-    def _wheel(self, pos):
-        # Input a value 0 to 255 to get a color value.
-        # The colours are a transition r - g - b - back to r.
-        if pos < 0 or pos > 255:
-            r = g = b = 0
-        elif pos < 85:
-            r = int(pos * 3)
-            g = int(255 - pos*3)
-            b = 0
-        elif pos < 170:
-            pos -= 85
-            r = int(255 - pos*3)
-            g = 0
-            b = int(pos*3)
-        else:
-            pos -= 170
-            r = 0
-            g = int(pos*3)
-            b = int(255 - pos*3)
-        return (r, g, b)
-
+    async def _blink_colors(self, color1, color2):
+        for __ in range(3):
+            self._update(Pixels.BLACK, Pixels.BLACK)
+            await asyncio.sleep(0.1)
+            self._update(color1, color2)
+            await asyncio.sleep(0.1)
+    
+    async def _blink_colors_loop(self, color1, color2):
+        while True:
+            await self._blink_colors(color1, color2)
+            await asyncio.sleep(3)      # Wait 3 seconds before starting the next pulse effect
+    
     def _cancel_tasks(self):
         log.debug('>> CANCEL')
         tasks = asyncio.gather(

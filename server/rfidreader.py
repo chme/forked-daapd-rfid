@@ -6,7 +6,7 @@ from mfrc522 import (
 import asyncio
 import logging
 
-from .pixels import WHITE, YELLOW, RED
+from .pixels import Pixels, PixelType
 
 log = logging.getLogger('main')
 
@@ -62,14 +62,14 @@ class RfidReader:
     async def read_tags(self):
         try:
             log.debug('[rfid] Read task started. Wating for new tag to start playback')
-            self.neo_pixels.pulse_color_loop(WHITE)
+            self.neo_pixels.set_state(Pixels.AZURE, PixelType.PULSE)
             self.current_task = self.loop.run_in_executor(None, self.reader.read_text)
             status, uid, text = await self.current_task
 
             if status == StatusCode.STATUS_CANCELED:
                 log.debug('[rfid] Wating for tag read was canceled. Quit read task')
                 self.__reset_current_tag()
-                self.neo_pixels.set_fill(YELLOW)
+                self.neo_pixels.set_state(Pixels.YELLOW, PixelType.FIXED)
                 return
             
             if status:
@@ -80,7 +80,7 @@ class RfidReader:
                 await self.daapd.play(text)
     
                 log.debug('[rfid] Wating for tag removed to pause playback')
-                self.neo_pixels.set_fill(WHITE)
+                self.neo_pixels.set_state(Pixels.GREY, PixelType.FIXED)
                 self.current_task = self.loop.run_in_executor(None, self.reader.wait_for_card_removed)
                 removed = await self.current_task
     
@@ -93,7 +93,7 @@ class RfidReader:
                 await self.daapd.pause()
             else:
                 self.__reset_current_tag()
-                self.neo_pixels.set_fill(RED)
+                self.neo_pixels.set_colors(Pixels.RED, Pixels.RED, PixelType.BLINK, 1)
                 log.error('[rfid] Error reading tag (status: {})'.format(status))
 
             await asyncio.sleep(1)
@@ -109,12 +109,13 @@ class RfidReader:
             log.debug('[rfid] Write task started')
             if self.current_task:
                 log.debug('[rfid] Cancel current rfid task')
-                #self.current_task.cancel()
+                self.neo_pixels.set_state(Pixels.YELLOW, PixelType.BLINK)
                 self.reader.cancel_wait()
                 await asyncio.wait([self.current_task])
                 log.debug('[rfid] Current rfid task completed. Coninue writing tag')
 
             log.info('[rfid] Waiting for tag to write new content={0}'.format(new_content))
+            self.neo_pixels.set_state(Pixels.YELLOW, PixelType.PULSE)
             self.timer = Timer(30, self.reader.cancel_wait)
             self.current_task = self.loop.run_in_executor(None, self.reader.write_text, new_content)
             status, uid, __ = await self.current_task
@@ -122,13 +123,18 @@ class RfidReader:
             if status == StatusCode.STATUS_CANCELED:
                 log.debug('[rfid] Wating for tag write was canceled. Quit read task')
                 log.warning('[rfid] Reschedule read task after write task was canceled')
+                self.neo_pixels.set_colors(Pixels.RED, Pixels.RED, PixelType.BLINK, 1)
+                await asyncio.sleep(1)
                 asyncio.ensure_future(self.read_tags(), loop=self.loop)
                 return
             
             self.timer.cancel()
             
             if status:
+                self.neo_pixels.set_state(Pixels.GREEN, PixelType.FIXED)
                 asyncio.ensure_future(self.web_socket.send_message('WRITE_SUCCESS', 'Tag created successfully. Please remove tag to proceed.'))
+            else:
+                self.neo_pixels.set_state(Pixels.RED, PixelType.FIXED)
 
             log.info('[rfid] Tag written. Waiting for tag removed')
             self.current_task = self.loop.run_in_executor(None, self.reader.wait_for_card_removed)
