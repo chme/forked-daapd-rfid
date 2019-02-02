@@ -84,15 +84,15 @@ class Pixels(object):
         asyncio.ensure_future(self._set_colors(color1, color2, pixel_type, duration), loop=self.loop)
     
     async def _set_colors(self, color1, color2, pixel_type, duration):
-        if pixel_type == PixelType.FIXED:
-            await self._blink_colors(color1, color2)
-        elif pixel_type == PixelType.PULSE:
+        if pixel_type == PixelType.PULSE:
             await self._pulse_colors(color1, color2)
+        elif pixel_type == PixelType.BLINK:
+            await self._blink_colors(color1, color2)
         else:
             self._update(color1, color2)
         
-        await asyncio.sleep(duration)
         if duration >= 0:
+            await asyncio.sleep(duration)
             self._reset_state()
     
     def _update(self, color1, color2):
@@ -129,9 +129,9 @@ class Pixels(object):
     async def _blink_colors(self, color1, color2):
         for __ in range(3):
             self._update(Pixels.BLACK, Pixels.BLACK)
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.2)
             self._update(color1, color2)
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.2)
     
     async def _blink_colors_loop(self, color1, color2):
         while True:
