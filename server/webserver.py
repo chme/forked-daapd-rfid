@@ -91,14 +91,14 @@ class WebServer:
         self.loop.run_until_complete(self.runner.cleanup())
         log.debug('[web] Webserver cleanup complete')
 
-    async def index(self, request):
+    async def index(self, __):
         return web.FileResponse(self.htdocs + '/index.html')
 
-    async def api_conf(self, request):
+    async def api_conf(self, __):
         data = { 'daapd_host': self.daapd_host, 'daapd_port': self.daapd_port }
         return web.json_response(data)
 
-    async def api_tags_current(self, request):
+    async def api_tags_current(self, __):
         uid, content = self.rfid_reader.current_tag()
         return web.json_response({ 'id': uid, 'content': content })
 
