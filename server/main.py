@@ -70,7 +70,7 @@ def main():
     conf = configparser.ConfigParser(defaults={})
     conf.read(args.conf)
 
-    _has_pixels = conf.get('pixels').getboolean('enabled')
+    _has_pixels = conf['pixels'].getboolean('enabled')
 
     loop = asyncio.get_event_loop()
 

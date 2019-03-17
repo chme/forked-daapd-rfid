@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup
 
 setup(name='musicbox-daapd',
     version='0.0.1',
     description='Musicbox based on forked-daapd.',
-    install_requires=['RPi.GPIO', 'mfrc522', 'aiohttp'],
+    install_requires=['RPi.GPIO', 'MFRC522-python', 'aiohttp'],
     packages=['server'],
     classifiers=[
         "Programming Language :: Python :: 3",
