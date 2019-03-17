@@ -14,7 +14,7 @@ setup(name='musicbox-daapd',
     ],
     entry_points={
         'console_scripts': [
-            'musicbox-daapd=main:main'
+            'musicbox-daapd=server.main:main'
         ],
     },
     data_files=[

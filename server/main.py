@@ -7,7 +7,7 @@ import logging.config
 import sys
 import threading
 
-from server import webserver, rfidreader, forked_daapd, buttons, pixels
+from . import webserver, rfidreader, forked_daapd, buttons, pixels
 
 
 DEFAULT_CONF_PATH = '/etc/musicbox-daapd.conf'
