@@ -88,12 +88,15 @@ class Buttons(object):
 
     def __on_pressed(self, pin):
         if pin == self.button_next_pin:
-            self.neo_pixels.set_colors(Pixels.CYAN, Pixels.BLACK, PixelType.FIXED, -1)
+            if self.neo_pixels:
+                self.neo_pixels.set_colors(Pixels.CYAN, Pixels.BLACK, PixelType.FIXED, -1)
         elif pin == self.button_prev_pin:
-            self.neo_pixels.set_colors(Pixels.BLACK, Pixels.MAGENTA, PixelType.FIXED, -1)
+            if self.neo_pixels:
+                self.neo_pixels.set_colors(Pixels.BLACK, Pixels.MAGENTA, PixelType.FIXED, -1)
     
     def __on_released(self, __):
-        self.neo_pixels.set_colors(Pixels.BLACK, Pixels.BLACK, PixelType.FIXED, 0)
+        if self.neo_pixels:
+            self.neo_pixels.set_colors(Pixels.BLACK, Pixels.BLACK, PixelType.FIXED, 0)
     
     def play_next(self, __):
         log.debug('[buttons] Play next triggered')
@@ -101,7 +104,8 @@ class Buttons(object):
     
     def volume_up(self, __):
         log.debug('[buttons] Volume up triggered')
-        self.neo_pixels.set_colors(Pixels.WHITE, Pixels.WHITE, PixelType.PULSE, -1)
+        if self.neo_pixels:
+            self.neo_pixels.set_colors(Pixels.WHITE, Pixels.WHITE, PixelType.PULSE, -1)
         asyncio.run_coroutine_threadsafe(self.daapd.volume_up(5), self.loop)
     
     def play_prev(self, __):
@@ -110,5 +114,6 @@ class Buttons(object):
     
     def volume_down(self, __):
         log.debug('[buttons] Volume down triggered')
-        self.neo_pixels.set_colors(Pixels.WHITE, Pixels.GREY, PixelType.PULSE, -1)
+        if self.neo_pixels:
+            self.neo_pixels.set_colors(Pixels.WHITE, Pixels.GREY, PixelType.PULSE, -1)
         asyncio.run_coroutine_threadsafe(self.daapd.volume_down(5), self.loop)
