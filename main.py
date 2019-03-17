@@ -10,9 +10,9 @@ import threading
 from server import webserver, rfidreader, forked_daapd, buttons, pixels
 
 
-DEFAULT_CONF_PATH = './musicboxd.conf'
-DEFAULT_LOG_PATH  = './musicboxd.log'
-DEFAULT_HTDOCS_PATH = './htdocs'
+DEFAULT_CONF_PATH = '/etc/musicbox-daapd.conf'
+DEFAULT_LOG_PATH  = '/var/log/musicbox-daapd.log'
+DEFAULT_HTDOCS_PATH = '/usr/share/musicbox-daapd/htdocs'
 
 def init_log(log_path):
     logging.config.dictConfig({

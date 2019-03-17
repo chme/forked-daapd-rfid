@@ -1,0 +1,3 @@
+RPi.GPIO>=0.6.5
+mfrc522
+aiohttp
