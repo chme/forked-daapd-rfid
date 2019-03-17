@@ -138,6 +138,7 @@ class RfidReader:
                 asyncio.ensure_future(self.web_socket.send_message('WRITE_SUCCESS', 'Tag created successfully. Please remove tag to proceed.'))
             else:
                 self.neo_pixels.set_state(Pixels.RED, PixelType.FIXED)
+                asyncio.ensure_future(self.web_socket.send_message('WRITE_ERROR', 'Failed to create tag. Please remove tag to retry.'))
 
             log.info('[rfid] Tag written. Waiting for tag removed')
             self.current_task = self.loop.run_in_executor(None, self.reader.wait_for_card_removed)
