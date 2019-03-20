@@ -23,7 +23,7 @@ class LongPressButton(object):
         
         self.last_event_time = 0
         GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(pin, GPIO.FALLING, callback=self.__on_event_detect)
+        GPIO.add_event_detect(pin, GPIO.FALLING, callback=self.__on_event_detect, bouncetime=600)
     
     def __on_event_detect(self, __):
         if time() - self.last_event_time < self.bouncetime:
