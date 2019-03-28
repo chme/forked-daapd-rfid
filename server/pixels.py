@@ -46,8 +46,7 @@ class Pixels(object):
     def __init__(self):
         self.loop = None    # The loop gets assigned after instantiation (in the neopixels thread)
         self.pixels = neopixel.NeoPixel(board.D12, 2, brightness=0.1, auto_write=False)
-        self.pixel_type = PixelType.FIXED
-        self.pixel_color = Pixels.BLACK
+        self._set_state(Pixels.YELLOW, PixelType.FIXED)
     
     def start(self):
         log.debug('Start pixels')
@@ -141,6 +140,7 @@ class Pixels(object):
     
     def _cancel_tasks(self):
         log.debug('>> CANCEL')
+        self._set_state(Pixels.YELLOW, PixelType.FIXED)
         tasks = asyncio.gather(
                     *asyncio.Task.all_tasks(loop=self.loop),
                     loop=self.loop,
