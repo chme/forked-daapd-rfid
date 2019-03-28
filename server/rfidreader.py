@@ -41,8 +41,10 @@ class RfidReader:
 
     def start(self):
         log.debug('[rfid] Starting RFID reader ...')
+        log.debug('[rfid] Wait for daapd connection established ...')
+        self.loop.run_until_complete(self._wait_for_daapd())
+        log.debug('[rfid] Init RFID reader ...')
         self.reader.init()
-        log.debug('[rfid] Reschedule read task')
         asyncio.ensure_future(self.read_tags(), loop=self.loop)
         log.debug('[rfid] Starting RFID reader complete')
 
@@ -59,6 +61,13 @@ class RfidReader:
     def current_tag(self):
         return self.current_tag_id, self.current_tag_content
 
+    async def _wait_for_daapd(self):
+        if self.neo_pixels:
+            self.neo_pixels.set_state(Pixels.YELLOW, PixelType.BLINK)
+        
+        while not self.daapd.connected:
+            await asyncio.sleep(2)
+    
     async def read_tags(self):
         try:
             log.debug('[rfid] Read task started. Wating for new tag to start playback')
