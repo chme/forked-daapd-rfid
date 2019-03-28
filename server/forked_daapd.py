@@ -19,6 +19,7 @@ class ForkedDaapd:
         self.websocket_url = 'http://{0}:{1}'.format(host, websocket_port)
         
         self.client = None
+        self.connected = False
 
     def start(self):
         self.client = self.loop.run_until_complete(self.__create_session())
@@ -33,6 +34,7 @@ class ForkedDaapd:
                 log.debug('[daapd] Connecting to forked-daapd websocket on url={}'.format(self.websocket_url))
                 async with self.client.ws_connect(self.websocket_url, protocols=('notify',)) as ws:
                     log.info('[daapd] Connection to forked-daapd websocket established')
+                    self.connected = True
                     await ws.send_json({ 'notify': ['player', 'outputs', 'volume'] })
                     async for msg in ws:
                         log.debug('[daapd] New message from websocket with type={0} and data={0}'.format(msg.type, msg.data))
@@ -43,8 +45,10 @@ class ForkedDaapd:
                         elif msg.type == aiohttp.WSMsgType.ERROR:
                             break
                 log.error('[daapd] Connection to forked-daapd websocket closed')
+                self.connected = False
             except:
                 log.error('[daapd] Failed to connect to forked-daapd websocket. Retry in 1 sec.')
+                self.connected = False
                 try:
                     await asyncio.sleep(1)
                 except asyncio.CancelledError:
